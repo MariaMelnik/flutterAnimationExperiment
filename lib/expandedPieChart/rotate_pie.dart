@@ -3,30 +3,23 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_gauge_test/expandedPieChart/custom_bottom_sheet.dart';
 import 'package:flutter_gauge_test/expandedPieChart/pie_chart.dart';
+import 'package:flutter_gauge_test/expandedPieChart/rotate_pie_data_set.dart';
 import 'package:flutter_gauge_test/expandedPieChart/tab_indicator.dart';
 
 class RotatePie extends StatefulWidget {
-  const RotatePie({Key key}) : super(key: key);
+  final List<RotatePieBuildingInfo> buildingInfo;
+
+  const RotatePie({
+    Key key,
+    @required this.buildingInfo,
+  }) : assert (buildingInfo != null),
+       super(key: key);
 
   @override
   _RotatePieState createState() => _RotatePieState();
 }
 
 class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
-  static const List<Color> colors = [
-    Colors.red,
-    Colors.yellow,
-    Colors.grey,
-    Colors.green
-  ];
-
-  static const List<PieChartSector> sectors = [
-    PieChartSector(startAngle: 0.0, endAngle: pi/2, color: Colors.red, sectorWidth: 180.0),
-    PieChartSector(startAngle: pi/2, endAngle: pi, color: Colors.yellow, sectorWidth: 180.0),
-    PieChartSector(startAngle: pi, endAngle: pi+pi/2, color: Colors.grey, sectorWidth: 180.0),
-    PieChartSector(startAngle: pi+pi/2, endAngle: 2*pi, color: Colors.green, sectorWidth: 180.0),
-  ];
-
   AnimationController controller;
   Animation<double> turnAnimation;
   Animation<double> pieSizeAnimation;
@@ -45,12 +38,11 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     pieSizeAnimation = Tween(begin: 1.0, end: 0.7).animate(controller);
   }
 
-
   //we need relative context from LayoutBuilder here to get relative coordinates of user's tap
   Widget _buildTapablePie(BuildContext context){
     return GestureDetector(
       child: PieChart(
-        sectors: sectors,
+        sectors: widget.buildingInfo.map((info) => info.sector).toList(),
       ),
       onTapUp: (details) => _onTap(details, context),
     );
@@ -83,12 +75,13 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   }
 
   Widget _buildTabViews(){
-    List<Widget> children = List<Widget>();
-    colors.forEach((Color color) => children.add(CustomBottomSheet(color: color)));
+    List<Widget> children = widget.buildingInfo
+        .map((info) => CustomBottomSheet(color: info.color))
+        .toList();
 
-
-    List<Widget> tabs = List<Widget>();
-    colors.forEach((Color color) => tabs.add(TabIndicator(color: color)));
+    List<Widget> tabs = widget.buildingInfo
+        .map((info) => TabIndicator(color: info.color))
+        .toList();
 
     //fixme: calculate correct size according to appBar size and tabBar size
     double height = MediaQuery.of(context).size.height;
@@ -139,6 +132,8 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   }
 
   PieChartSector _findTargetSector(double angle, double rotationFromInitAngle){
+    List<PieChartSector> sectors = widget.buildingInfo.map((info) => info.sector).toList();
+
     return sectors.firstWhere((PieChartSector sector) {
       bool isTapped = false;
 

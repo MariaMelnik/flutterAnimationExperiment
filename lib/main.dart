@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gauge_test/expandedPieChart/pie_chart.dart';
+import 'package:flutter_gauge_test/expandedPieChart/pie_data_set_mock.dart';
 import 'package:flutter_gauge_test/expandedPieChart/rotate_pie.dart';
 import 'dart:math';
 
@@ -87,15 +87,13 @@ class MyHomePage extends StatelessWidget {
     return Center(
       child: Container(
         height: double.infinity,
-          color: Colors.blueGrey.withOpacity(0.3),
-          child: RotatePie()
+          color: Colors.blueGrey.withOpacity(0.07),
+          child: RotatePie(buildingInfo: Data.data,)
       ),
     );
   }
 
-  void _onPieTap(){
 
-  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
