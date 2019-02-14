@@ -30,12 +30,11 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   AnimationController controller;
   Animation<double> turnAnimation;
   Animation<double> pieSizeAnimation;
-  Animation<double> bottomContainerSizeAnimation;
-  double _lastAnimationVal = 0.0;
+  Animation<double> pieSliverHeightAnimation;
 
-  Animation<double> pieDyOffsetAnimation;
-  final double targetDyOffset = -250.0;
-  final double maxContainerHeight = 450.0;
+  double _lastAnimationVal = 0.0; //angle of last rotation
+
+  final double pieHeightAfterClick = 200.0;
 
   @override
   void initState(){
@@ -43,10 +42,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
 
     controller = AnimationController(duration: Duration(seconds: 1), vsync: this);
     turnAnimation = Tween(begin: 0.0, end: 0.0).animate(controller);
-    pieSizeAnimation = Tween(begin: 1.0, end: 0.5).animate(controller);
-    pieDyOffsetAnimation = Tween(begin: 0.0, end: targetDyOffset).animate(controller);
-
-    bottomContainerSizeAnimation = Tween(begin: 0.0, end: maxContainerHeight).animate(controller);
+    pieSizeAnimation = Tween(begin: 1.0, end: 0.7).animate(controller);
   }
 
 
@@ -62,25 +58,19 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
 
   Widget _buildPie(){
     return Center( //todo: I am not sure Center should be inside this widget, not outside
-      child: AnimatedBuilder(
-        animation: pieDyOffsetAnimation,
-        builder: (_, __) => Transform.translate(
-          offset: Offset(0.0, pieDyOffsetAnimation.value),
-          child: LayoutBuilder(
-              builder: (bcontext, _) {
-                return RotationTransition(
-                    turns: turnAnimation,
-                    child: AnimatedBuilder(
-                      animation: pieSizeAnimation,
-                      builder: (_, __) => Transform.scale(
-                          scale: pieSizeAnimation.value,
-                          child: _buildTapablePie(bcontext)
-                      ),
-                    )
-                );
-              }
-          ),
-        ),
+      child: LayoutBuilder(
+          builder: (bcontext, _) {
+            return RotationTransition(
+                turns: turnAnimation,
+                child: AnimatedBuilder(
+                  animation: pieSizeAnimation,
+                  builder: (_, __) => Transform.scale(
+                      scale: pieSizeAnimation.value,
+                      child: _buildTapablePie(bcontext)
+                  ),
+                )
+            );
+          }
       ),
     );
   }
@@ -88,10 +78,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   Widget _buildBottomContainer(){
     return Align(
       alignment: Alignment.bottomCenter,
-      child: AnimatedBuilder(
-        animation: bottomContainerSizeAnimation,
-        builder: (_, __ ) => _buildTabViews(),
-      ),
+      child: _buildTabViews()
     );
   }
 
@@ -103,9 +90,11 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     List<Widget> tabs = List<Widget>();
     colors.forEach((Color color) => tabs.add(TabIndicator(color: color)));
 
+    //fixme: calculate correct size according to appBar size and tabBar size
+    double height = MediaQuery.of(context).size.height;
 
     return Container(
-      height: bottomContainerSizeAnimation.value,
+      height: height,
       width: double.infinity,
       child: DefaultTabController(
           length:4,
@@ -119,14 +108,32 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     );
   }
 
-
+  void _initSetAnimation(double height){
+    pieSliverHeightAnimation = Tween(begin: height-100, end: pieHeightAfterClick).animate(controller);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        _buildBottomContainer(),
-        _buildPie(),
+    if(pieSliverHeightAnimation == null) {
+      double height = MediaQuery.of(context).size.height;
+      _initSetAnimation(height);
+    }
+
+    return CustomScrollView(
+      slivers: <Widget>[
+        AnimatedBuilder(
+          animation: pieSliverHeightAnimation,
+          builder: (_, __) => SliverAppBar(
+            floating: false,
+            flexibleSpace: _buildPie(),
+            expandedHeight: pieSliverHeightAnimation.value,
+            backgroundColor: Colors.transparent,
+            pinned: false,
+          ),
+        ),
+        SliverList(
+            delegate: SliverChildListDelegate([_buildBottomContainer()])
+        )
       ],
     );
   }
