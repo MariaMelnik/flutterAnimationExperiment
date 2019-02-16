@@ -24,8 +24,10 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   Animation<double> turnAnimation;
   Animation<double> pieSizeAnimation;
   Animation<double> pieSliverHeightAnimation;
+  TabController tabController;
 
   double _lastAnimationVal = 0.0; //angle of last rotation
+  bool _animationGoing = false;
 
   final double pieHeightAfterClick = 200.0;
 
@@ -36,6 +38,14 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     controller = AnimationController(duration: Duration(seconds: 1), vsync: this);
     turnAnimation = Tween(begin: 0.0, end: 0.0).animate(controller);
     pieSizeAnimation = Tween(begin: 1.0, end: 0.7).animate(controller);
+
+    tabController = TabController(length: widget.buildingInfo.length, vsync: this);
+    tabController.addListener(_tabControllerChanged);
+  }
+
+  void _tabControllerChanged() {
+    PieChartSector targetSector = widget.buildingInfo[tabController.index].sector;
+    _rotateToCenterOfSector(targetSector);
   }
 
   //we need relative context from LayoutBuilder here to get relative coordinates of user's tap
@@ -89,14 +99,20 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     return Container(
       height: height,
       width: double.infinity,
-      child: DefaultTabController(
-          length:4,
-          child: Column(
-            children: <Widget>[
-              TabBar(tabs: tabs, isScrollable: true,),
-              Expanded(child: TabBarView(children: children)),
-            ],
-          )
+      child: Column(
+        children: <Widget>[
+          TabBar(
+            tabs: tabs,
+            isScrollable: true,
+            controller: tabController,
+          ),
+          Expanded(
+              child: TabBarView(
+                children: children,
+                controller: tabController,
+              )
+          ),
+        ],
       ),
     );
   }
@@ -132,87 +148,66 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   }
 
   PieChartSector _findTargetSector(double angle, double rotationFromInitAngle){
+    var relTapAngle = angle - rotationFromInitAngle;
+    relTapAngle = _normalize(relTapAngle);
+
     List<PieChartSector> sectors = widget.buildingInfo.map((info) => info.sector).toList();
-
+    
     return sectors.firstWhere((PieChartSector sector) {
-      bool isTapped = false;
-
-      double rotatedStart =  sector.startAngle - rotationFromInitAngle;
-      double rotatedEnd = sector.endAngle - rotationFromInitAngle;
-
-      if (rotatedStart < 0 && rotatedEnd < 0) {
-        rotatedStart = rotatedStart + 2*pi;
-        rotatedEnd = rotatedEnd + 2*pi;
-
-        isTapped = rotatedStart <= angle && rotatedEnd >= angle;
-      } else if (rotatedStart < 0) {
-        rotatedStart = rotatedStart + 2*pi;
-
-        //split one sector for two
-        double startFirstSector = rotatedStart;
-        double endFirstSector = 2*pi;
-
-        double startSecondSector = 0;
-        double endSecondSector = rotatedEnd;
-
-        bool isFirstSectorTapped = startFirstSector <= angle && endFirstSector >= angle;
-        bool isSecondSectorTapped = startSecondSector <= angle && endSecondSector >= angle;
-
-        isTapped = isFirstSectorTapped || isSecondSectorTapped;
-      } else {
-        isTapped = rotatedStart <= angle && rotatedEnd >= angle;
-      }
-
-      return isTapped;
+      return sector.startAngle <= relTapAngle && sector.endAngle > relTapAngle;
     }, orElse: ()=>null);
   }
+  
 
-
-  //how much we should rotate to the middle of the targetSector
-  double _findCenterToRotate(PieChartSector targetSector, double rotationFromInitAngle){
-    double sectorAngleFromStartToMiddle = (targetSector.endAngle - targetSector.startAngle)/2;
-    double rotatedStart = targetSector.startAngle - rotationFromInitAngle;
-    double angleToRotateToMiddle = rotatedStart + sectorAngleFromStartToMiddle;
-    if (angleToRotateToMiddle < 0) angleToRotateToMiddle = angleToRotateToMiddle + 2*pi;
-
-    return angleToRotateToMiddle;
-  }
-
-
-  void _onTap(TapUpDetails details, BuildContext context){
-    print("onTap");
-
+  void _onTap(TapUpDetails details, BuildContext context) {
     Offset tapPosition = (context.findRenderObject() as RenderBox).globalToLocal(details.globalPosition);
-
-
     Size boxSize = (context.findRenderObject() as RenderBox).size;
 
     //finding angle with tangens
     double radius = boxSize.width/2;
     double a = tapPosition.dx - radius;
     double b = tapPosition.dy - radius;
-    double angle = atan2(a, b);
-    if(tapPosition.dx < radius) {
+    double angle = atan2(b, a);
+    if(tapPosition.dy < radius) {
       //atan2 gives us value in [-pi, pi]. We need convert negative value to positive
       angle = angle + 2*pi;
     }
 
-    PieChartSector targetSector = _findTargetSector(angle, _lastAnimationVal*2*pi);
+    PieChartSector targetSector = _findTargetSector(angle, _lastAnimationVal * 2 * pi);
     if (targetSector == null) return null;
 
-    double angleToRotateToMiddleOfSector = _findCenterToRotate(targetSector, _lastAnimationVal*2*pi);
+    int index = widget.buildingInfo.indexWhere((info) => info.sector == targetSector);
+    tabController.animateTo(index);
+    _rotateToCenterOfSector(targetSector);
+  }
+  
+  void _rotateToCenterOfSector(PieChartSector sector) {
+    double sectorMiddle = (sector.endAngle + sector.startAngle) / 2;
+    double newCircleAngle = _normalize(pi/2 - sectorMiddle);
+    double oldNormAngle = _normalize(_lastAnimationVal * 2 * pi);
+    if (newCircleAngle < oldNormAngle) newCircleAngle += 2 * pi;
+    double delta = newCircleAngle - oldNormAngle;
+
+    double endValRad = _lastAnimationVal * 2 * pi + delta;
     double oldVal = _lastAnimationVal;
-    double endVal = _lastAnimationVal + angleToRotateToMiddleOfSector/(2*pi);
 
-    setState(() {
-      CurvedAnimation curve = CurvedAnimation(parent: controller, curve: Curves.easeIn);
-      turnAnimation = Tween(begin: oldVal, end: endVal).animate(curve);
-    });
+    CurvedAnimation curve = CurvedAnimation(parent: controller, curve: Curves.easeIn);
+    turnAnimation = Tween(begin: oldVal, end: endValRad / (2*pi)).animate(curve);
 
-    controller.reset();
-    controller.forward().then((_) {
-      _lastAnimationVal = endVal;
-      if (_lastAnimationVal > 1) _lastAnimationVal = _lastAnimationVal - 1;
-    });
+    // we don't need reset and start controller if it is already started
+    // it can be in cases caused transition animation of changing tab
+    if (!_animationGoing) {
+      controller.reset();
+      _animationGoing = true;
+
+      controller.forward().then((_) {
+        _lastAnimationVal = endValRad / (2*pi);
+        _animationGoing = false;
+      });
+    }
+  }
+
+  double _normalize(double originalVal) {
+    return originalVal % (2*pi);
   }
 }

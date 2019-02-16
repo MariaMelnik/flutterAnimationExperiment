@@ -12,7 +12,13 @@ class Data {
     RotatePieDataSet(color: Colors.green, value: 30.0, child: Container()),
     RotatePieDataSet(color: Colors.purple, value: 10.0, child: Container()),
     RotatePieDataSet(color: Colors.orange, value: 40.0, child: Container()),
-    RotatePieDataSet(color: Colors.blueGrey, value: 20.0, child: Container()),
+    RotatePieDataSet(color: Colors.blueGrey, value: 15.0, child: Container()),
+    RotatePieDataSet(color: Colors.yellow, value: 5.0, child: Container()),
+//
+//    RotatePieDataSet(color: Colors.purple, value: 25.0, child: Container()),
+//    RotatePieDataSet(color: Colors.orange, value: 25.0, child: Container()),
+//    RotatePieDataSet(color: Colors.blueGrey, value: 25.0, child: Container()),
+//    RotatePieDataSet(color: Colors.yellow, value: 25.0, child: Container()),
   ];
 
   static List<RotatePieBuildingInfo> getBuildingInfo(List<RotatePieDataSet> dataSets, double total) {
@@ -29,7 +35,8 @@ class Data {
           color: dataSet.color,
           sectorWidth: 150.0
       );//todo: remove hardcoded part
-
+//      print("value is ${dataSet.value}, lastEndTemp is: ${lastEndTemp}");
+//      print("color is: ${dataSet.color}, startAngle: $lastEndAngle, endAngle: ${lastEndCalculated}");
       lastEndAngle = lastEndCalculated;
       return RotatePieBuildingInfo(
           sector: sector,
