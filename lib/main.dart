@@ -29,7 +29,7 @@ class MyHomePage extends StatelessWidget {
 
 
   MyHomePage() {
-//    Stream.periodic(Duration(seconds: 4)).listen(genData);
+    Stream.periodic(Duration(seconds: 10)).listen(genData);
   }
 
   void genData(dynamic num){
@@ -43,40 +43,136 @@ class MyHomePage extends StatelessWidget {
 
 
   Widget _buildGauge(){
-    GaugeRangeDecoration range1 = GaugeRangeDecoration(minVal: 0.0, maxVal: 0.3, color: Colors.red);
-//    GaugeRangeDecoration range2 = GaugeRangeDecoration(minVal: 0.3, maxVal: 0.6, color: Colors.green);
     GaugeRangeDecoration range3 = GaugeRangeDecoration(minVal: 0.6, maxVal: 60, color: Colors.yellow);
+    GaugeRangeDecoration range2 = GaugeRangeDecoration(minVal: 60.0, maxVal: 74.0, color: Colors.green);
+    GaugeRangeDecoration range1 = GaugeRangeDecoration(minVal: 74.0, maxVal: 82, color: Colors.red);
+    GaugeRangeDecoration range4 = GaugeRangeDecoration(minVal: 82, maxVal: 160, color: Colors.blueGrey);
 
 
     GaugeDecoration gaugeDecoration = GaugeDecoration(
-        arrowColor: Colors.grey,
+        arrowColor: Colors.black,
         arrowPaintingStyle: PaintingStyle.fill,
-        tickWidth: 3.0,
+        arrowStartWidth: 8,
+        baselineColor: Colors.blueGrey[50],
         tickColor: Colors.black.withOpacity(0.6),
         textStyle: TextStyle(
           color: Colors.black.withOpacity(0.6),
         ),
-        rangesDecoration: [range3],
-        rangeWidth: 60.0,
+        rangesDecoration: [range1, range2, range3, range4],
+        rangeWidth: 10.0,
         limitArrowHeight: 16.0,
-        limitArrowWidth: 12.0
+        limitArrowWidth: 12.0,
+//      backgroundColor: Colors.green[100]
+    );
+
+
+
+    GaugeDecoration darkGaugeDecoration = GaugeDecoration(
+      arrowColor: Colors.grey,
+      arrowPaintingStyle: PaintingStyle.fill,
+      arrowStartWidth: 8,
+      baselineColor: Colors.blueGrey[50],
+      tickColor: Colors.black.withOpacity(0.6),
+      textStyle: TextStyle(
+        color: Colors.white.withOpacity(0.6),
+      ),
+      rangesDecoration: [range1, range2, range3, range4],
+      rangeWidth: 10.0,
+      limitArrowHeight: 16.0,
+      limitArrowWidth: 12.0,
+//      backgroundColor: Colors.green[100]
     );
 
     return Column(
       children: <Widget>[
-        Center(
-          child: GaugeWidget(
-            minVal: 50.0,
-            maxVal: 90.0,
-            baselineVal: 75.6,
-            limitVal: 80.0,
-            gaugeDecoration: gaugeDecoration,
-            dataChangesStream: stream,
+        SizedBox(height: 10.0,),
+        Expanded(
+          flex: 1,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children:
+              <Widget>[ SizedBox(width: 10.0,),
+              Card(
+//                color: Colors.green[100],
+                child: Column(
+                  children: <Widget>[
+                    Expanded(
+                      child: GaugeWidget(
+                        gaugeType: GaugeType.valueDriverGauge,
+                        minVal: 50.0,
+                        maxVal: 90.0,
+//            baselineVal: 75.6,
+//            limitVal: 80.0,
+                        gaugeDecoration: gaugeDecoration,
+                        dataChangesStream: stream,
+                      ),
+                    ),
+                    Text("AHU-1, 65%")
+                  ],
+                ),
+              ),
+              SizedBox(width: 10.0,),
+
+              Card(
+//                color: Colors.green[100],
+                child: Column(
+                  children: <Widget>[
+                    Expanded(
+                      child: GaugeWidget(
+                        minVal: 50.0,
+                        maxVal: 90.0,
+//            baselineVal: 75.6,
+//            limitVal: 80.0,
+                        gaugeDecoration: gaugeDecoration,
+                        dataChangesStream: stream,
+                      ),
+                    ),
+                    Text("AHU-2, 35%")
+                  ],
+                ),
+              ),
+              SizedBox(width: 10.0,),
+
+              GaugeWidget(
+                minVal: 50.0,
+                maxVal: 90.0,
+//            baselineVal: 75.6,
+//            limitVal: 80.0,
+                gaugeDecoration: gaugeDecoration,
+                dataChangesStream: stream,
+              ),
+              SizedBox(width: 10.0,),
+              ],
+
+
           ),
         ),
-        StreamBuilder(
-            stream: stream,
-            builder: (_, snapshot) => Text("${snapshot.data}")
+        Expanded(
+          flex: 1,
+          child:    Card(
+              color: Colors.black87.withOpacity(0.7),
+              child: Column(
+                children: <Widget>[
+                  Expanded(
+                    child: GaugeWidget(
+                      minVal: 50.0,
+                      maxVal: 90.0,
+//            baselineVal: 75.6,
+//            limitVal: 80.0,
+                      gaugeDecoration: darkGaugeDecoration,
+                      dataChangesStream: stream,
+                    ),
+                  ),
+                  Text("AHU-2, 35%", style: TextStyle(color: Colors.white.withOpacity(0.9)),)
+                ],
+              ),),
+        ),
+        Expanded(
+          flex: 3,
+          child: StreamBuilder(
+              stream: stream,
+              builder: (_, snapshot) => Text("${snapshot.data}")
+          ),
         )
       ],
     );
@@ -87,7 +183,7 @@ class MyHomePage extends StatelessWidget {
     return Center(
       child: Container(
         height: double.infinity,
-          color: Colors.blueGrey.withOpacity(0.07),
+          color: Colors.blueGrey.withOpacity(0.03),
           child: RotatePie(buildingInfo: Data.data,)
       ),
     );
@@ -98,9 +194,11 @@ class MyHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("try gauge"),
+        backgroundColor: Colors.white,
+        title: Text("Animation", style: TextStyle(color: Colors.grey, letterSpacing: 1.2),),
       ),
-      body: _buildPie()
+//      body: _buildPie()
+      body: _buildGauge()
     );
   }
 }

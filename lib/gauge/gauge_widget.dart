@@ -19,6 +19,7 @@ class GaugeWidget extends StatefulWidget {
   final num baselineVal;
   final num initVal;
   final num limitVal;
+  final GaugeType gaugeType;
 
   const GaugeWidget({
     Key key,
@@ -29,6 +30,7 @@ class GaugeWidget extends StatefulWidget {
     this.limitVal,
     this.dataChangesStream,
     this.gaugeDecoration,
+    this.gaugeType = GaugeType.defaultGauge
   }) : super(key: key);
 
   @override
@@ -49,7 +51,7 @@ class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin 
     if (widget.dataChangesStream != null) _dataChangesSubscription = widget.dataChangesStream.listen(onValueChanged);
 
     _arrowAnimationController = AnimationController(duration: _changeRotationAnimationDuration, vsync: this);
-    _setAnimation(_curValue, _curValue);
+    _setArrowAnimation(_curValue, _curValue);
     super.initState();
   }
 
@@ -57,7 +59,7 @@ class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin 
     double oldVal = _curValue;
     _curValue = newVal;
 
-    _setAnimation(newVal, oldVal);
+    _setArrowAnimation(newVal, oldVal);
 
     if (newVal >= oldVal) {
       _arrowAnimationController.reset();
@@ -66,9 +68,11 @@ class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin 
       _arrowAnimationController.reverse();
     }
 
+//    setState(() {
+//    });
   }
 
-  void _setAnimation(double newVal, double curVal){
+  void _setArrowAnimation(double newVal, double curVal){
     CurvedAnimation curve = CurvedAnimation(parent: _arrowAnimationController, curve: Curves.easeInOut);
     _arrowAnimation = Tween(begin: curVal, end: newVal).animate(curve);
     _arrowAnimation = newVal >= curVal
@@ -90,24 +94,69 @@ class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin 
   }
 
 
-  Widget _buildRanges(){
-    if(widget.gaugeDecoration.rangesDecoration == null || widget.gaugeDecoration.rangesDecoration.isEmpty) return Container(width: 0.0, height: 0.0,);
-    else {
-      return RepaintBoundary(
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          child: CustomPaint(
-            painter: RangePainter(
-                max: widget.maxVal,
-                min: widget.minVal,
-                ranges: widget.gaugeDecoration.rangesDecoration,
-                rangeWidth: widget.gaugeDecoration.rangeWidth
-            ),
-          ),
+  Widget _buildRanges(List<GaugeRangeDecoration> ranges){
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      child: CustomPaint(
+        painter: RangePainter(
+            max: widget.maxVal,
+            min: widget.minVal,
+            ranges: ranges,
+            rangeWidth: widget.gaugeDecoration.rangeWidth
         ),
-      );
+      ),
+    );
+  }
+
+  // return different colorful sector depends on gauge type
+  Widget _buildRangesByType(GaugeType type) {
+    if(widget.gaugeDecoration.rangesDecoration == null || widget.gaugeDecoration.rangesDecoration.isEmpty) return Container(width: 0.0, height: 0.0,);
+
+    switch(type) {
+      case GaugeType.defaultGauge:
+        List<GaugeRangeDecoration> ranges = widget.gaugeDecoration.rangesDecoration;
+        return RepaintBoundary(
+          child: _buildRanges(ranges),
+        );
+        break;
+      case GaugeType.valueDriverGauge:
+       return AnimatedBuilder(
+         animation: _arrowAnimation,
+         builder: (_, __) => _buildRanges(_getValueDrivenRanges(_arrowAnimation.value))
+       );
     }
+  }
+
+  // building something like this https://dribbble.com/shots/2467087-Daily-workout-statistics-Card
+  List<GaugeRangeDecoration> _getValueDrivenRanges(double curVal){
+    List<GaugeRangeDecoration> newRanges;
+
+    // what color we should use
+    // define according to appropriate sector for _curVal
+    GaugeRangeDecoration curDecoration = widget.gaugeDecoration.rangesDecoration
+        .firstWhere((GaugeRangeDecoration dec) => dec.minVal < curVal && dec.maxVal >= curVal,
+        orElse: () => null);
+
+    if (curDecoration != null) {
+      Color curColor = curDecoration.color;
+
+      // need to normalize cur if it is out of the boundaries
+      double normalizedCur;
+      if (curVal < widget.minVal) normalizedCur = widget.minVal;
+      else if (curVal > widget.maxVal) normalizedCur = widget.maxVal;
+      else normalizedCur = curVal;
+
+      GaugeRangeDecoration beforeCurVal = GaugeRangeDecoration(minVal: widget.minVal, maxVal: normalizedCur, color: curColor);
+      GaugeRangeDecoration afterCurVal = GaugeRangeDecoration(minVal: normalizedCur, maxVal: widget.maxVal, color: Colors.black38);
+
+      newRanges = [beforeCurVal, afterCurVal];
+    } else {
+      GaugeRangeDecoration newRange = GaugeRangeDecoration(minVal: widget.minVal, maxVal: widget.maxVal, color: Colors.lightGreen);
+      newRanges = [newRange];
+    }
+
+    return newRanges;
   }
 
   Widget _buildTicks(){
@@ -195,23 +244,22 @@ class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: AspectRatio(
-          aspectRatio: 2.0,
-          child: Container(
-            color: Colors.white,
-            child: Stack(
-              children: [
-                _buildRanges(),
-                _buildTicks(),
-                _buildBaseline(),
-                _buildArrow(),
-                _buildLimitArrow(),
-              ],
-            ),
-          ),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+//        color: widget.gaugeDecoration.backgroundColor,
+        borderRadius: BorderRadius.circular(10.0)
+      ),
+      padding: const EdgeInsets.all(10.0),
+      child: AspectRatio(
+        aspectRatio: 2.0,
+        child: Stack(
+          children: [
+            _buildRangesByType(widget.gaugeType),
+            _buildTicks(),
+            _buildBaseline(),
+            _buildArrow(),
+            _buildLimitArrow(),
+          ],
         ),
       ),
     );
@@ -222,4 +270,12 @@ class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin 
     if (_dataChangesSubscription != null) _dataChangesSubscription.cancel();
     super.dispose();
   }
+}
+
+enum GaugeType {
+  // default gauge with persistent ranges (if exists)
+  defaultGauge,
+
+  // gauge with ranges depends on value (before curVal and after curVal)
+  valueDriverGauge
 }

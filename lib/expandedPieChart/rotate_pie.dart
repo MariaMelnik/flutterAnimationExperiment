@@ -20,13 +20,16 @@ class RotatePie extends StatefulWidget {
 }
 
 class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
+  bool onTop = false;
   AnimationController controller;
+  AnimationController pieSliverHeightController;
   Animation<double> turnAnimation;
   Animation<double> pieSizeAnimation;
   Animation<double> pieSliverHeightAnimation;
   TabController tabController;
+  PieChartSector _currentSector;
 
-  Duration _animationDuration = const Duration(milliseconds: 300);
+  Duration _animationDuration = const Duration(milliseconds: 400);
   Curve _curve = Curves.easeOut;
 
   // true is animation is initialized by tab on circle
@@ -43,6 +46,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     super.initState();
 
     controller = AnimationController(duration: _animationDuration, vsync: this);
+    pieSliverHeightController = AnimationController(duration: _animationDuration, vsync: this);
     turnAnimation = Tween(begin: 0.0, end: 0.0).animate(controller);
     pieSizeAnimation = Tween(begin: 1.0, end: 0.7).animate(controller);
 
@@ -51,8 +55,12 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   }
 
   void _tabControllerChanged() {
-    PieChartSector targetSector = widget.buildingInfo[tabController.index].sector;
-    if (!_isCircleInitializedAnimationGoing) _rotateToCenterOfSector(targetSector);
+    PieChartSector targetSector = widget.buildingInfo[tabController.length -1  - tabController.index].sector;
+    if (targetSector != _currentSector) {
+      print("_tabControllerChanged:: targetSector is: ${targetSector.color}");
+      if (!_isCircleInitializedAnimationGoing) _rotateToCenterOfSector(targetSector);
+      _currentSector = targetSector;
+    }
   }
 
   //we need relative context from LayoutBuilder here to get relative coordinates of user's tap
@@ -69,15 +77,19 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     return Center( //todo: I am not sure Center should be inside this widget, not outside
       child: LayoutBuilder(
           builder: (bcontext, _) {
-            return RotationTransition(
-                turns: turnAnimation,
-                child: AnimatedBuilder(
-                  animation: pieSizeAnimation,
-                  builder: (_, __) => Transform.scale(
-                      scale: pieSizeAnimation.value,
-                      child: _buildTapablePie(bcontext)
-                  ),
-                )
+            print("in layout builder");
+            return AnimatedBuilder(
+              animation: pieSizeAnimation,
+              builder: (_,__) => RotationTransition(
+                  turns: turnAnimation,
+                  child: AnimatedBuilder(
+                    animation: pieSizeAnimation,
+                    builder: (_, __) => Transform.scale(
+                        scale: pieSizeAnimation.value,
+                        child: _buildTapablePie(bcontext)
+                    ),
+                  )
+              ),
             );
           }
       ),
@@ -94,11 +106,11 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   Widget _buildTabViews(){
     List<Widget> children = widget.buildingInfo
         .map((info) => CustomBottomSheet(color: info.color))
-        .toList();
+        .toList().reversed.toList();
 
     List<Widget> tabs = widget.buildingInfo
         .map((info) => TabIndicator(color: info.color))
-        .toList();
+        .toList().reversed.toList();
 
     //fixme: calculate correct size according to appBar size and tabBar size
     double height = MediaQuery.of(context).size.height;
@@ -125,7 +137,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   }
 
   void _initSetAnimation(double height){
-    pieSliverHeightAnimation = Tween(begin: height-100, end: pieHeightAfterClick).animate(controller);
+    pieSliverHeightAnimation = Tween(begin: height-100, end: pieHeightAfterClick).animate(pieSliverHeightController);
   }
 
   @override
@@ -137,6 +149,13 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
 
     return CustomScrollView(
       slivers: <Widget>[
+//          SliverAppBar(
+//            floating: false,
+//            flexibleSpace: _buildPie(),
+//            expandedHeight: 600,
+//            backgroundColor: Colors.transparent,
+//            pinned: false,
+//          ),
         AnimatedBuilder(
           animation: pieSliverHeightAnimation,
           builder: (_, __) => SliverAppBar(
@@ -167,6 +186,8 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   
 
   void _onTap(TapUpDetails details, BuildContext context) {
+    pieSliverHeightController.forward();
+
     _isCircleInitializedAnimationGoing = true;
 
     Offset tapPosition = (context.findRenderObject() as RenderBox).globalToLocal(details.globalPosition);
@@ -185,18 +206,22 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     PieChartSector targetSector = _findTargetSector(angle, _lastAnimationVal * 2 * pi);
     if (targetSector == null) return null;
 
-    int index = widget.buildingInfo.indexWhere((info) => info.sector == targetSector);
+    if (targetSector != _currentSector) {
+      int index = widget.buildingInfo.indexWhere((info) => info.sector == targetSector);
 
-    // duration must be the same as duration of circle rotation animation
-    tabController.animateTo(index, duration: _animationDuration, curve: _curve);
-    _rotateToCenterOfSector(targetSector);
+      // duration must be the same as duration of circle rotation animation
+      tabController.animateTo(tabController.length - 1 - index, duration: _animationDuration, curve: _curve);
+      _rotateToCenterOfSector(targetSector);
+
+      _currentSector = targetSector;
+    }
   }
   
   void _rotateToCenterOfSector(PieChartSector sector) {
     double sectorMiddle = (sector.endAngle + sector.startAngle) / 2;
     double newCircleAngle = _normalize(pi/2 - sectorMiddle);
     double oldNormAngle = _normalize(_lastAnimationVal * 2 * pi);
-    if (newCircleAngle < oldNormAngle) newCircleAngle += 2 * pi;
+//    if (newCircleAngle < oldNormAngle) newCircleAngle += 2 * pi;
     double delta = newCircleAngle - oldNormAngle;
 
     double endValRad = _lastAnimationVal * 2 * pi + delta;
@@ -206,7 +231,6 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     turnAnimation = Tween(begin: oldVal, end: endValRad / (2*pi)).animate(curve);
 
     controller.reset();
-
     controller.forward().then((_) {
       _lastAnimationVal = endValRad / (2*pi);
       _isCircleInitializedAnimationGoing = false;
