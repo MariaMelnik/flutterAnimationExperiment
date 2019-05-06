@@ -6,7 +6,6 @@ const PaintingStyle _arrowPaintingStyle = PaintingStyle.fill;
 const double _arrowStartWidth = 8.0;
 const double _arrowEndShift = 10.0;
 
-
 //ticks defaults
 const int _ticksCount = 11;
 const int _tickPerSection = 2;
@@ -31,11 +30,8 @@ const double _limitArrowHeight = 8.0;
 const Color _limitArrowColor = Colors.red;
 const PaintingStyle _limitArrowPaintingStyle = PaintingStyle.fill;
 
-
 //background
 const Color _backgroundColor = Colors.white;
-
-
 
 class GaugeDecoration {
   //background
@@ -93,7 +89,7 @@ class GaugeDecoration {
     Color limitArrowColor,
     PaintingStyle limitArrowPaintingStyle,
     this.rangesDecoration,
-  }) : this.arrowColor = arrowColor ?? _arrowColor,
+  })  : this.arrowColor = arrowColor ?? _arrowColor,
         this.arrowPaintingStyle = arrowPaintingStyle ?? _arrowPaintingStyle,
         this.arrowEndShift = arrowEndShift ?? _arrowEndShift,
         this.arrowStartWidth = arrowStartWidth ?? _arrowStartWidth,
@@ -105,12 +101,58 @@ class GaugeDecoration {
         this.ticksPerSection = ticksPerSection ?? _tickPerSection,
         this.baselineColor = baselineColor ?? _baselineColor,
         this.baselineWidth = baselineWidth ?? _baselineWidth,
-        this.baselinePaintingStyle = baselinePaintingStyle ?? _baselinePaintingStyle,
+        this.baselinePaintingStyle =
+            baselinePaintingStyle ?? _baselinePaintingStyle,
         this.backgroundColor = backgroundColor ?? _backgroundColor,
         this.limitArrowHeight = limitArrowHeight ?? _limitArrowHeight,
         this.limitArrowWidth = limitArrowWidth ?? _limitArrowWidth,
         this.limitArrowColor = limitArrowColor ?? _limitArrowColor,
-        this.limitArrowPaintingStyle = limitArrowPaintingStyle ?? _limitArrowPaintingStyle;
+        this.limitArrowPaintingStyle =
+            limitArrowPaintingStyle ?? _limitArrowPaintingStyle;
+
+  /// Creates a copy of this decorations but with the given fields replaced with the new values.
+  GaugeDecoration copyWith(
+      {Color arrowColor,
+      PaintingStyle arrowPaintingStyle,
+      double arrowEndShift,
+      double arrowStartWidth,
+      Color tickColor,
+      double tickWidth,
+      TextStyle textStyle,
+      double rangeWidth,
+      int ticksCount,
+      int ticksPerSection,
+      Color baselineColor,
+      double baselineWidth,
+      PaintingStyle baselinePaintingStyle,
+      Color backgroundColor,
+      double limitArrowHeight,
+      double limitArrowWidth,
+      Color limitArrowColor,
+      PaintingStyle limitArrowPaintingStyle,
+      List<GaugeRangeDecoration> rangesDecoration}) {
+    return GaugeDecoration(
+      arrowColor: arrowColor ?? this.arrowColor,
+      arrowPaintingStyle: arrowPaintingStyle ?? this.arrowPaintingStyle,
+      arrowEndShift: arrowEndShift ?? this.arrowEndShift,
+      arrowStartWidth: arrowStartWidth ?? this.arrowStartWidth,
+      tickColor: tickColor ?? this.tickColor,
+      tickWidth: tickWidth ?? this.tickWidth,
+      textStyle: textStyle ?? this.textStyle,
+      rangeWidth: rangeWidth ?? this.rangeWidth,
+      ticksCount: ticksCount ?? this.ticksCount,
+      ticksPerSection: ticksPerSection ?? this.ticksPerSection,
+      baselineColor: baselineColor ?? this.baselineColor,
+      baselineWidth: baselineWidth ?? this.baselineWidth,
+      baselinePaintingStyle: baselinePaintingStyle ?? this.baselinePaintingStyle,
+      backgroundColor: baselineColor ?? this.baselineColor,
+      limitArrowHeight: limitArrowHeight ?? this.limitArrowHeight,
+      limitArrowWidth: limitArrowWidth ?? this.limitArrowWidth,
+      limitArrowColor: limitArrowColor ?? this.limitArrowColor,
+      limitArrowPaintingStyle: limitArrowPaintingStyle ?? this.limitArrowPaintingStyle,
+      rangesDecoration: rangesDecoration ?? this.rangesDecoration
+    );
+  }
 }
 
 class GaugeRangeDecoration {
