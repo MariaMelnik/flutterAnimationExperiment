@@ -29,7 +29,7 @@ class MyHomePage extends StatelessWidget {
 
 
   MyHomePage() {
-    Stream.periodic(Duration(seconds: 10)).listen(genData);
+    Stream.periodic(Duration(seconds: 3)).listen(genData);
   }
 
   void genData(dynamic num){
@@ -91,20 +91,26 @@ class MyHomePage extends StatelessWidget {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children:
-              <Widget>[ SizedBox(width: 10.0,),
+              <Widget>[
+                SizedBox(width: 10.0,),
               Card(
-//                color: Colors.green[100],
+                color: Colors.green[100],
                 child: Column(
                   children: <Widget>[
                     Expanded(
-                      child: GaugeWidget(
-                        gaugeType: GaugeType.valueDriverGauge,
-                        minVal: 50.0,
-                        maxVal: 90.0,
+                      child: StreamBuilder<Object>(
+                        stream: stream,
+                        builder: (context, snapshot) {
+                          return GaugeWidget(
+                            gaugeType: GaugeType.valueDriverGauge,
+                            minVal: 50.0,
+                            curVal: snapshot.data,
+                            maxVal: 90.0,
 //            baselineVal: 75.6,
 //            limitVal: 80.0,
-                        gaugeDecoration: gaugeDecoration,
-                        dataChangesStream: stream,
+                            gaugeDecoration: gaugeDecoration,
+                          );
+                        }
                       ),
                     ),
                     Text("AHU-1, 65%")
@@ -118,13 +124,18 @@ class MyHomePage extends StatelessWidget {
                 child: Column(
                   children: <Widget>[
                     Expanded(
-                      child: GaugeWidget(
-                        minVal: 50.0,
-                        maxVal: 90.0,
+                      child: StreamBuilder<double>(
+                        stream: stream,
+                        builder: (context, snapshot) {
+                          return GaugeWidget(
+                            minVal: 50.0,
+                            maxVal: 90.0,
+                            curVal: snapshot.data,
 //            baselineVal: 75.6,
 //            limitVal: 80.0,
-                        gaugeDecoration: gaugeDecoration,
-                        dataChangesStream: stream,
+                            gaugeDecoration: gaugeDecoration,
+                          );
+                        }
                       ),
                     ),
                     Text("AHU-2, 35%")
@@ -133,13 +144,18 @@ class MyHomePage extends StatelessWidget {
               ),
               SizedBox(width: 10.0,),
 
-              GaugeWidget(
-                minVal: 50.0,
-                maxVal: 90.0,
+              StreamBuilder<double>(
+                stream: stream,
+                builder: (context, snapshot) {
+                  return GaugeWidget(
+                    curVal: snapshot.data,
+                    minVal: 50.0,
+                    maxVal: 90.0,
 //            baselineVal: 75.6,
 //            limitVal: 80.0,
-                gaugeDecoration: gaugeDecoration,
-                dataChangesStream: stream,
+                    gaugeDecoration: gaugeDecoration,
+                  );
+                }
               ),
               SizedBox(width: 10.0,),
               ],
@@ -154,13 +170,18 @@ class MyHomePage extends StatelessWidget {
               child: Column(
                 children: <Widget>[
                   Expanded(
-                    child: GaugeWidget(
-                      minVal: 50.0,
-                      maxVal: 90.0,
+                    child: StreamBuilder<double>(
+                      stream: stream,
+                      builder: (context, snapshot) {
+                        return GaugeWidget(
+                          curVal: snapshot.data,
+                          minVal: 50.0,
+                          maxVal: 90.0,
 //            baselineVal: 75.6,
 //            limitVal: 80.0,
-                      gaugeDecoration: darkGaugeDecoration,
-                      dataChangesStream: stream,
+                          gaugeDecoration: darkGaugeDecoration,
+                        );
+                      }
                     ),
                   ),
                   Text("AHU-2, 35%", style: TextStyle(color: Colors.white.withOpacity(0.9)),)

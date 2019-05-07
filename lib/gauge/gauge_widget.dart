@@ -10,12 +10,13 @@ import 'package:flutter_gauge_test/gauge/ticks_painter.dart';
 
 const double _defaultInitValue = 1.0;
 const Duration _changeRotationAnimationDuration = const Duration(milliseconds: 300);
+const Curve _animationCurve = Curves.easeOut;
 
-class GaugeWidget extends StatefulWidget {
-  final Stream<num> dataChangesStream;
+class GaugeWidget extends ImplicitlyAnimatedWidget {
   final GaugeDecoration gaugeDecoration;
   final num minVal;
   final num maxVal;
+  final num curVal;
   final num baselineVal;
   final num initVal;
   final num limitVal;
@@ -25,61 +26,30 @@ class GaugeWidget extends StatefulWidget {
     Key key,
     @required this.minVal,
     @required this.maxVal,
+    @required this.curVal,
     this.initVal,
     this.baselineVal,
     this.limitVal,
-    this.dataChangesStream,
     this.gaugeDecoration,
     this.gaugeType = GaugeType.defaultGauge
-  }) : super(key: key);
+  }) : super(
+      key: key,
+      duration: _changeRotationAnimationDuration,
+      curve: _animationCurve);
 
   @override
   GaugeWidgetState createState() => GaugeWidgetState();
 }
 
 
-class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin {
-  double _curValue;
-  AnimationController _arrowAnimationController;
-  Animation<double> _arrowAnimation;
-  StreamSubscription _dataChangesSubscription;
+class GaugeWidgetState extends AnimatedWidgetBaseState<GaugeWidget> {
+  Tween _arrowAnimation;
 
   @override
-  void initState(){
-    _curValue = widget.initVal ?? _defaultInitValue;
-
-    if (widget.dataChangesStream != null) _dataChangesSubscription = widget.dataChangesStream.listen(onValueChanged);
-
-    _arrowAnimationController = AnimationController(duration: _changeRotationAnimationDuration, vsync: this);
-    _setArrowAnimation(_curValue, _curValue);
-    super.initState();
+  void forEachTween(visitor) {
+    _arrowAnimation = visitor(_arrowAnimation, widget.curVal ?? _defaultInitValue, (val) => Tween(begin: val));
+    assert(_arrowAnimation != null);
   }
-
-  void onValueChanged(num newVal){
-    double oldVal = _curValue;
-    _curValue = newVal;
-
-    _setArrowAnimation(newVal, oldVal);
-
-    if (newVal >= oldVal) {
-      _arrowAnimationController.reset();
-      _arrowAnimationController.forward();
-    } else {
-      _arrowAnimationController.reverse();
-    }
-
-//    setState(() {
-//    });
-  }
-
-  void _setArrowAnimation(double newVal, double curVal){
-    CurvedAnimation curve = CurvedAnimation(parent: _arrowAnimationController, curve: Curves.easeInOut);
-    _arrowAnimation = Tween(begin: curVal, end: newVal).animate(curve);
-    _arrowAnimation = newVal >= curVal
-        ? Tween(begin: curVal, end: newVal).animate(curve)
-        : Tween(begin: newVal, end: curVal).animate(curve);
-  }
-
 
   TickPainter _buildTickPainter(){
     return TickPainter(
@@ -121,10 +91,7 @@ class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin 
         );
         break;
       case GaugeType.valueDriverGauge:
-       return AnimatedBuilder(
-         animation: _arrowAnimation,
-         builder: (_, __) => _buildRanges(_getValueDrivenRanges(_arrowAnimation.value))
-       );
+       return _buildRanges(_getValueDrivenRanges(_arrowAnimation.evaluate(animation) as double));
     }
   }
 
@@ -179,16 +146,13 @@ class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin 
     return Container(
       height: double.infinity,
       width: double.infinity,
-      child: AnimatedBuilder(
-        animation: _arrowAnimation,
-        builder: (_, __) => CustomPaint(
-          painter: ArrowPainter(
-            rotationPercent: _getRotationPercent(widget.minVal, widget.maxVal, _arrowAnimation.value),
+      child: CustomPaint(
+        painter: ArrowPainter(
+            rotationPercent: _getRotationPercent(widget.minVal, widget.maxVal, _arrowAnimation.evaluate(animation) as double),
             arrowColor: widget.gaugeDecoration.arrowColor,
             arrowPaintingStyle: widget.gaugeDecoration.arrowPaintingStyle,
             arrowEndShift: widget.gaugeDecoration.arrowEndShift,
             arrowStartWidth: widget.gaugeDecoration.arrowStartWidth
-          ),
         ),
       ),
     );
@@ -267,7 +231,6 @@ class GaugeWidgetState extends State<GaugeWidget> with TickerProviderStateMixin 
 
   @override
   void dispose(){
-    if (_dataChangesSubscription != null) _dataChangesSubscription.cancel();
     super.dispose();
   }
 }
