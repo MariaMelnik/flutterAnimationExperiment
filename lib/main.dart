@@ -6,6 +6,9 @@ import 'package:flutter_gauge_test/expandedPieChart/rotate_pie.dart';
 import 'dart:math';
 
 import 'package:flutter_gauge_test/gauge/gauge.dart';
+import 'package:flutter_gauge_test/kpiChart/stacked_history_chart_mock_data.dart';
+import 'package:flutter_gauge_test/kpiChart/stacked_history_chart_widget.dart';
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -29,7 +32,7 @@ class MyHomePage extends StatelessWidget {
 
 
   MyHomePage() {
-    Stream.periodic(Duration(seconds: 3)).listen(genData);
+//    Stream.periodic(Duration(seconds: 3)).listen(genData);
   }
 
   void genData(dynamic num){
@@ -205,11 +208,23 @@ class MyHomePage extends StatelessWidget {
       child: Container(
         height: double.infinity,
           color: Colors.blueGrey.withOpacity(0.03),
-          child: RotatePie(buildingInfo: Data.data,)
+          child: RotatePie(buildingInfo: RotatePieMockData.data,)
       ),
     );
   }
 
+
+  Widget _buildStackedHistoryChart(){
+    return Center(
+      child: SizedBox(
+        height: 100,
+        child: StackedHistoryChart(
+          data: StackedHistoryChartMockData.data,
+          decoration: StackedHistoryChartMockData.decoration,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -219,7 +234,8 @@ class MyHomePage extends StatelessWidget {
         title: Text("Animation", style: TextStyle(color: Colors.grey, letterSpacing: 1.2),),
       ),
 //      body: _buildPie()
-      body: _buildGauge()
+      body: _buildStackedHistoryChart(),
+//      body: _buildGauge()
     );
   }
 }

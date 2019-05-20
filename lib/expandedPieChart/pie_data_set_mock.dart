@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gauge_test/expandedPieChart/pie_chart_sector.dart';
 import 'package:flutter_gauge_test/expandedPieChart/rotate_pie_data_set.dart';
 
-class Data {
+class RotatePieMockData {
   static const double total = 100;
 
 

@@ -77,7 +77,6 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     return Center( //todo: I am not sure Center should be inside this widget, not outside
       child: LayoutBuilder(
           builder: (bcontext, _) {
-            print("in layout builder");
             return AnimatedBuilder(
               animation: pieSizeAnimation,
               builder: (_,__) => RotationTransition(

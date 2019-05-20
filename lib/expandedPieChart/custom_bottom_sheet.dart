@@ -28,7 +28,6 @@ class CustomBottomSheet extends StatelessWidget {
   }
 }
 
-//fixme: check how it works
 class TriangleClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
