@@ -210,20 +210,21 @@ class GaugeWidgetState extends AnimatedWidgetBaseState<GaugeWidget> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.transparent,
-//        color: widget.gaugeDecoration.backgroundColor,
         borderRadius: BorderRadius.circular(10.0)
       ),
       padding: const EdgeInsets.all(10.0),
-      child: AspectRatio(
-        aspectRatio: 2.0,
-        child: Stack(
-          children: [
-            _buildRangesByType(widget.gaugeType),
-            _buildTicks(),
-            _buildBaseline(),
-            _buildArrow(),
-            _buildLimitArrow(),
-          ],
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: 2.0,
+          child: Stack(
+            children: [
+              _buildRangesByType(widget.gaugeType),
+              _buildTicks(),
+              _buildBaseline(),
+              _buildArrow(),
+              _buildLimitArrow(),
+            ],
+          ),
         ),
       ),
     );

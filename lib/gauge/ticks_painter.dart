@@ -65,8 +65,6 @@ class TickPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-//    print("tick paint. Size: width ${size.width}, height ${size.height}");
-
     //we can't store this as instance variables because we need calculate it according to given [size]
     //todo: может надо сохранять size и в shouldRepaint проверять его изменение
     final double longTick = size.width/_longTickRatio;
