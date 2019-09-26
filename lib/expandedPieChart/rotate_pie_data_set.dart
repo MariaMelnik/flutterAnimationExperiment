@@ -1,32 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gauge_test/expandedPieChart/pie_chart_sector.dart';
 
-//fixme: come up with better class name
-class RotatePieDataSet {
-  final double value;
-  final Color color;
-  final Widget child;
-
-  RotatePieDataSet({
-    @required this.value,
-    @required this.color,
-    @required this.child
-  }) : assert (value != null),
-       assert(color != null),
-       assert(child != null);
-}
-
-//fixme: come up with better class name
 class RotatePieBuildingInfo {
   final PieChartSector sector;
+
+  /// Color for tab view and tab indicator correlated with [sector].
+  ///
+  /// If null - [sector.color] will be used.
+  /// It means tab view and tab indicator for this [sector] will be same color as [sector] itself.
   final Color color;
+
+  /// Widget in tab view correlated with [sector].
   final Widget child;
 
   RotatePieBuildingInfo({
     @required this.sector,
-    @required this.color,
-    @required this.child
+    @required this.child,
+    Color color
   }): assert (sector != null),
-      assert(color != null),
-      assert(child != null);
+      assert(child != null),
+      color = sector.color;
 }

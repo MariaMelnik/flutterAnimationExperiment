@@ -208,7 +208,10 @@ class MyHomePage extends StatelessWidget {
       child: Container(
         height: double.infinity,
           color: Colors.blueGrey.withOpacity(0.03),
-          child: RotatePie(buildingInfo: RotatePieMockData.data,)
+          child: RotatePie(
+            buildingInfo: RotatePieMockData.data,
+            heightReduction: 64.0, //appBar height
+          )
       ),
     );
   }
@@ -233,8 +236,8 @@ class MyHomePage extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Text("Animation", style: TextStyle(color: Colors.grey, letterSpacing: 1.2),),
       ),
-//      body: _buildPie()
-      body: _buildStackedHistoryChart(),
+      body: _buildPie()
+//      body: _buildStackedHistoryChart(),
 //      body: _buildGauge()
     );
   }

@@ -9,10 +9,24 @@ import 'package:flutter_gauge_test/expandedPieChart/tab_indicator.dart';
 class RotatePie extends StatefulWidget {
   final List<RotatePieBuildingInfo> buildingInfo;
 
+  /// How much view port for initial pie chart less than screen height.
+  ///
+  /// If you have appBar - it is 64.0.
+  /// If null - no reduction will be used. Height of view port for pie chart will be equals screen height.
+
+  // As long as pie is scrollable we don't know appropriate initial size for it to match it free screen.
+  // We can't get it with context because it is scrollable as well.
+  // By default we make view port height equals screen height.
+  // But if user has app bar it mean not all pieChart will be pushed at the bottom little bit by this appBar.
+  // To make it center and correct size we need to know heights of all widgets user use on the same screen as pie chart.
+  final double heightReduction;
+
   const RotatePie({
     Key key,
     @required this.buildingInfo,
+    double heightReduction
   }) : assert (buildingInfo != null),
+       this.heightReduction = heightReduction ?? 0.0,
        super(key: key);
 
   @override
@@ -20,42 +34,59 @@ class RotatePie extends StatefulWidget {
 }
 
 class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
-  bool onTop = false;
-  AnimationController controller;
-  AnimationController pieSliverHeightController;
-  Animation<double> turnAnimation;
-  Animation<double> pieSizeAnimation;
-  Animation<double> pieSliverHeightAnimation;
-  TabController tabController;
-  PieChartSector _currentSector;
+  // Size of the pie when it is on top. 
+  // It is the smallest size pie can be.
+  final double _pieHeightAfterClick = 200.0;
+
+  final Curve _curve = Curves.easeOut;
 
   Duration _animationDuration = const Duration(milliseconds: 400);
-  Curve _curve = Curves.easeOut;
+
+  // Controller for pie size animation when user scroll up tabs and for turn animation as well.
+  AnimationController _controller;
+  
+  // Controller for sliver app bar size animation after user clicked on big pie.
+  AnimationController _pieSliverHeightController;
+
+  // Controller for pie chart size animation.
+  AnimationController _pieSizeController;
+
+  Animation<double> _turnAnimation;
+  
+  Animation<double> _pieSizeAnimation;
+  
+  Animation<double> _pieSliverHeightAnimation;
+  
+  TabController _tabController;
+  
+  PieChartSector _currentSector;
 
   // true is animation is initialized by tab on circle
   // needs to avoid animation caused tab switching while circle is rotating
   bool _isCircleInitializedAnimationGoing = false;
 
+  // Angle of last rotation.
+  double _lastAnimationVal = 0.0;
 
-  double _lastAnimationVal = 0.0; //angle of last rotation
-
-  final double pieHeightAfterClick = 200.0;
 
   @override
   void initState(){
     super.initState();
 
-    controller = AnimationController(duration: _animationDuration, vsync: this);
-    pieSliverHeightController = AnimationController(duration: _animationDuration, vsync: this);
-    turnAnimation = Tween(begin: 0.0, end: 0.0).animate(controller);
-    pieSizeAnimation = Tween(begin: 1.0, end: 0.7).animate(controller);
+    _controller = AnimationController(duration: _animationDuration, vsync: this);
+    _pieSliverHeightController = AnimationController(duration: _animationDuration, vsync: this);
+    _pieSizeController = AnimationController(duration: _animationDuration, vsync: this);
+    // Made fake animation here because we use one _controller for two animations.
+    // Both of them must not be null when controller forwards.
+    _turnAnimation = Tween(begin: 0.0, end: 0.0).animate(_controller);
+    _pieSizeAnimation = Tween(begin: 1.0, end: 0.7).animate(_pieSizeController);
 
-    tabController = TabController(length: widget.buildingInfo.length, vsync: this);
-    tabController.addListener(_tabControllerChanged);
+    _tabController = TabController(length: widget.buildingInfo.length, vsync: this);
+    _tabController.addListener(_tabControllerChanged);
   }
 
   void _tabControllerChanged() {
-    PieChartSector targetSector = widget.buildingInfo[tabController.length -1  - tabController.index].sector;
+    PieChartSector targetSector = widget.buildingInfo[_tabController.length -1  - _tabController.index].sector;
     if (targetSector != _currentSector) {
       print("_tabControllerChanged:: targetSector is: ${targetSector.color}");
       if (!_isCircleInitializedAnimationGoing) _rotateToCenterOfSector(targetSector);
@@ -74,19 +105,19 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   }
 
   Widget _buildPie(){
-    return Center( //todo: I am not sure Center should be inside this widget, not outside
+    return Center(
       child: LayoutBuilder(
           builder: (bcontext, _) {
             return AnimatedBuilder(
-              animation: pieSizeAnimation,
-              builder: (_,__) => RotationTransition(
-                  turns: turnAnimation,
+              animation: _pieSizeAnimation,
+              builder: (_,__) => Transform.scale(
+                  scale: _pieSizeAnimation.value,
                   child: AnimatedBuilder(
-                    animation: pieSizeAnimation,
-                    builder: (_, __) => Transform.scale(
-                        scale: pieSizeAnimation.value,
-                        child: _buildTapablePie(bcontext)
-                    ),
+                      animation: _turnAnimation,
+                      builder: (_, __) => Transform.rotate(
+                        angle: _turnAnimation.value,
+                        child: _buildTapablePie(bcontext),
+                      )
                   )
               ),
             );
@@ -96,23 +127,19 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   }
 
   Widget _buildBottomContainer(){
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: _buildTabViews()
-    );
+    return _buildTabViews();
   }
 
   Widget _buildTabViews(){
     List<Widget> children = widget.buildingInfo
-        .map((info) => CustomBottomSheet(color: info.color))
+        .map((info) => CustomBottomSheet(color: info.color, child: info.child,))
         .toList().reversed.toList();
 
     List<Widget> tabs = widget.buildingInfo
         .map((info) => TabIndicator(color: info.color))
         .toList().reversed.toList();
 
-    //fixme: calculate correct size according to appBar size and tabBar size
-    double height = MediaQuery.of(context).size.height;
+    double height = MediaQuery.of(context).size.height - widget.heightReduction - kTabIndicatorHeight;
 
     return Container(
       height: height,
@@ -122,12 +149,12 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
           TabBar(
             tabs: tabs,
             isScrollable: true,
-            controller: tabController,
+            controller: _tabController,
           ),
           Expanded(
               child: TabBarView(
                 children: children,
-                controller: tabController,
+                controller: _tabController,
               )
           ),
         ],
@@ -136,37 +163,35 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   }
 
   void _initSetAnimation(double height){
-    pieSliverHeightAnimation = Tween(begin: height-100, end: pieHeightAfterClick).animate(pieSliverHeightController);
+    _pieSliverHeightAnimation = Tween(begin: height, end: _pieHeightAfterClick).animate(_pieSliverHeightController);
+  }
+
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    double height = MediaQuery.of(context).size.height - widget.heightReduction;
+    _initSetAnimation(height);
   }
 
   @override
   Widget build(BuildContext context) {
-    if(pieSliverHeightAnimation == null) {
-      double height = MediaQuery.of(context).size.height;
-      _initSetAnimation(height);
-    }
-
     return CustomScrollView(
       slivers: <Widget>[
-//          SliverAppBar(
-//            floating: false,
-//            flexibleSpace: _buildPie(),
-//            expandedHeight: 600,
-//            backgroundColor: Colors.transparent,
-//            pinned: false,
-//          ),
         AnimatedBuilder(
-          animation: pieSliverHeightAnimation,
-          builder: (_, __) => SliverAppBar(
+          animation: _pieSliverHeightAnimation,
+          child: _buildPie(),
+          builder: (_, Widget child) => SliverAppBar(
             floating: false,
-            flexibleSpace: _buildPie(),
-            expandedHeight: pieSliverHeightAnimation.value,
+            flexibleSpace: child,
+            expandedHeight: _pieSliverHeightAnimation.value,
             backgroundColor: Colors.transparent,
             pinned: false,
           ),
         ),
         SliverList(
-            delegate: SliverChildListDelegate([_buildBottomContainer()])
+            delegate: SliverChildListDelegate.fixed([_buildBottomContainer()])
         )
       ],
     );
@@ -185,7 +210,8 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   
 
   void _onTap(TapUpDetails details, BuildContext context) {
-    pieSliverHeightController.forward();
+    _pieSliverHeightController.forward();
+    _pieSizeController.forward();
 
     _isCircleInitializedAnimationGoing = true;
 
@@ -209,7 +235,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
       int index = widget.buildingInfo.indexWhere((info) => info.sector == targetSector);
 
       // duration must be the same as duration of circle rotation animation
-      tabController.animateTo(tabController.length - 1 - index, duration: _animationDuration, curve: _curve);
+      _tabController.animateTo(_tabController.length - 1 - index, duration: _animationDuration, curve: _curve);
       _rotateToCenterOfSector(targetSector);
 
       _currentSector = targetSector;
@@ -226,11 +252,11 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     double endValRad = _lastAnimationVal * 2 * pi + delta;
     double oldVal = _lastAnimationVal;
 
-    CurvedAnimation curve = CurvedAnimation(parent: controller, curve: _curve);
-    turnAnimation = Tween(begin: oldVal, end: endValRad / (2*pi)).animate(curve);
+    CurvedAnimation curve = CurvedAnimation(parent: _controller, curve: _curve);
+    _turnAnimation = Tween(begin: oldVal, end: endValRad).animate(curve);
 
-    controller.reset();
-    controller.forward().then((_) {
+//    _controller.reset();
+    _controller.forward(from: 0.0).then((_) {
       _lastAnimationVal = endValRad / (2*pi);
       _isCircleInitializedAnimationGoing = false;
     });

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
 class CustomBottomSheet extends StatelessWidget {
+  /// Background color for the container.
   final Color color;
 
-  const CustomBottomSheet({Key key, @required this.color}) : super(key: key);
+  /// Child widget inside container.
+  final Widget child;
+
+  const CustomBottomSheet({Key key, @required this.color, this.child}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +25,12 @@ class CustomBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(child: Container(color: color,),)
+          Expanded(
+            child: Container(
+              color: color,
+              child: child,
+            ),
+          )
         ],
       ),
     );
@@ -33,8 +42,8 @@ class TriangleClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     final path = Path();
     path.moveTo(size.width / 2, 0.0);
-    path.lineTo(0.0, size.height);
-    path.lineTo(size.width, size.height);
+    path.lineTo(0.0, size.height + 1.0); // Add 1.0 to cover 1.0 strokeWidth
+    path.lineTo(size.width, size.height + 1.0); //  Add 1.0 to cover 1.0 strokeWidth
     path.close();
     return path;
   }
