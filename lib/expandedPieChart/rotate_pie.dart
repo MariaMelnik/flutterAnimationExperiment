@@ -65,7 +65,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   // needs to avoid animation caused tab switching while circle is rotating
   bool _isCircleInitializedAnimationGoing = false;
 
-  // Angle of last rotation.
+  // Angle of last rotation. Should be between 0 and 2 * pi.
   double _lastAnimationVal = 0.0;
 
 
@@ -99,6 +99,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     return GestureDetector(
       child: PieChart(
         sectors: widget.buildingInfo.map((info) => info.sector).toList(),
+        rotateAngle: _lastAnimationVal,
       ),
       onTapUp: (details) => _onTap(details, context),
     );
@@ -213,7 +214,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     _pieSliverHeightController.forward();
     _pieSizeController.forward();
 
-    _isCircleInitializedAnimationGoing = true;
+//    _isCircleInitializedAnimationGoing = true;
 
     Offset tapPosition = (context.findRenderObject() as RenderBox).globalToLocal(details.globalPosition);
     Size boxSize = (context.findRenderObject() as RenderBox).size;
@@ -228,7 +229,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
       angle = angle + 2*pi;
     }
 
-    PieChartSector targetSector = _findTargetSector(angle, _lastAnimationVal * 2 * pi);
+    PieChartSector targetSector = _findTargetSector(angle, _lastAnimationVal);
     if (targetSector == null) return null;
 
     if (targetSector != _currentSector) {
@@ -245,20 +246,9 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   void _rotateToCenterOfSector(PieChartSector sector) {
     double sectorMiddle = (sector.endAngle + sector.startAngle) / 2;
     double newCircleAngle = _normalize(pi/2 - sectorMiddle);
-    double oldNormAngle = _normalize(_lastAnimationVal * 2 * pi);
-//    if (newCircleAngle < oldNormAngle) newCircleAngle += 2 * pi;
-    double delta = newCircleAngle - oldNormAngle;
 
-    double endValRad = _lastAnimationVal * 2 * pi + delta;
-    double oldVal = _lastAnimationVal;
-
-    CurvedAnimation curve = CurvedAnimation(parent: _controller, curve: _curve);
-    _turnAnimation = Tween(begin: oldVal, end: endValRad).animate(curve);
-
-//    _controller.reset();
-    _controller.forward(from: 0.0).then((_) {
-      _lastAnimationVal = endValRad / (2*pi);
-      _isCircleInitializedAnimationGoing = false;
+    setState(() {
+      _lastAnimationVal = _normalize(newCircleAngle);
     });
   }
 

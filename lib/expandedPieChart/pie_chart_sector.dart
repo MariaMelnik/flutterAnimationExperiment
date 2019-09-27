@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 class PieChartSector {
+  // Angle in radians. Between 0.0 and 2*pi.
   final double startAngle;
+
+  // Angle in radians. Between 0.0 and 2*pi.
   final double endAngle;
   final Color color;
   final double sectorWidth;
