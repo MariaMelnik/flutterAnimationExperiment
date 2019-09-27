@@ -1,24 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gauge_test/expandedPieChart/pie_chart_sector.dart';
+import 'dart:math';
 
 class PieChartPainter extends CustomPainter{
-  final Paint painter;
   final List<PieChartSector> sectors;
+  final Paint _painter;
+  final PieChartSector selectedSector;
+  final PieChartSector previousSelectedSector;
+  final double opacityDelta;
+
+  // How many of the pie should be visible.
+  // By default 2*pi what means all pie is visible.
+  final double maxShownAngle;
 
   PieChartPainter({
-    @required this.sectors
+    @required this.sectors,
+    this.selectedSector,
+    this.previousSelectedSector,
+    this.maxShownAngle = 2 * pi,
+    this.opacityDelta,
   }):
-        painter = Paint(),
-        assert (sectors!=null)
-  {
-    painter.style = PaintingStyle.stroke;
-  }
+        _painter = Paint()
+          ..style = PaintingStyle.stroke,
+        assert (sectors!=null);
 
   
   void _paintSector(Canvas canvas, PieChartSector sector, double radius){
     double endAngleChecked = sector.startAngle > sector.endAngle
         ? sector.startAngle
         : sector.endAngle;
+
+    if (sector.startAngle > maxShownAngle) return;
+    if (endAngleChecked > maxShownAngle) endAngleChecked = maxShownAngle;
 
     double sectorWidthChecked = sector.sectorWidth > radius
         ? radius
@@ -32,15 +45,23 @@ class PieChartPainter extends CustomPainter{
         Offset(radius - sectorWidthChecked/2, radius - sectorWidthChecked/2)
     );
 
-    painter.color = sector.color;
-    painter.strokeWidth = sectorWidthChecked;
+
+    if (selectedSector != null) {
+      if (sector == selectedSector) _painter.color = sector.color.withOpacity(0.5 + opacityDelta);
+      else if (sector == previousSelectedSector) _painter.color = sector.color.withOpacity(1 - opacityDelta);
+      else _painter.color = sector.color.withOpacity(0.5);
+    } else {
+      _painter.color = sector.color.withOpacity(1.0);
+    }
+
+    _painter.strokeWidth = sectorWidthChecked;
 
     canvas.drawArc(
         outerRect,
         sector.startAngle,
         sweepAngle,
         false,
-        painter
+        _painter
     );
   }
 

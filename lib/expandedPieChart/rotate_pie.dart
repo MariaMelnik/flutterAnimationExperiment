@@ -66,8 +66,12 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   bool _isCircleInitializedAnimationGoing = false;
 
   // Angle of last rotation. Should be between 0 and 2 * pi.
-  double _lastAnimationVal = 0.0;
+  double _lastRotationVal = 0.0;
 
+  // Map where key is PieChartSector and value is angle of the middle of this sector.
+  Map<PieChartSector, double> _sectorMiddles = Map<PieChartSector, double>();
+
+  double _maxShownAngle = 0.0;
 
   @override
   void initState(){
@@ -76,6 +80,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     _controller = AnimationController(duration: _animationDuration, vsync: this);
     _pieSliverHeightController = AnimationController(duration: _animationDuration, vsync: this);
     _pieSizeController = AnimationController(duration: _animationDuration, vsync: this);
+
     // Made fake animation here because we use one _controller for two animations.
     // Both of them must not be null when controller forwards.
     _turnAnimation = Tween(begin: 0.0, end: 0.0).animate(_controller);
@@ -83,6 +88,57 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
 
     _tabController = TabController(length: widget.buildingInfo.length, vsync: this);
     _tabController.addListener(_tabControllerChanged);
+
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _startInitialFillAnimation());
+//    _tabController.animation.addListener(() => print("tabController animation: ${_tabController.animation.value}"));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    double height = MediaQuery.of(context).size.height - widget.heightReduction;
+    _initSetAnimation(height);
+    _initSectorsMiddles();
+  }
+
+  void _initSectorsMiddles() {
+    _sectorMiddles.clear();
+
+    widget.buildingInfo
+        .forEach((RotatePieBuildingInfo info) {
+            double originalMiddle = (info.sector.startAngle + info.sector.endAngle) / 2;
+            double rotatedMiddle = pi/2 - originalMiddle;
+            _sectorMiddles[info.sector] = rotatedMiddle;
+          });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: <Widget>[
+        AnimatedBuilder(
+          animation: _pieSliverHeightAnimation,
+          child: _buildPie(),
+          builder: (_, Widget child) => SliverAppBar(
+            floating: false,
+            flexibleSpace: child,
+            expandedHeight: _pieSliverHeightAnimation.value,
+            backgroundColor: Colors.transparent,
+            pinned: false,
+          ),
+        ),
+        SliverList(
+            delegate: SliverChildListDelegate.fixed([_buildBottomContainer()])
+        )
+      ],
+    );
+  }
+
+  // We need change angle after first build delay to make implicit animation work for initial filling chart.
+  void _startInitialFillAnimation(){
+    setState(() => _maxShownAngle = 2*pi);
   }
 
   void _tabControllerChanged() {
@@ -92,17 +148,6 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
       if (!_isCircleInitializedAnimationGoing) _rotateToCenterOfSector(targetSector);
       _currentSector = targetSector;
     }
-  }
-
-  //we need relative context from LayoutBuilder here to get relative coordinates of user's tap
-  Widget _buildTapablePie(BuildContext context){
-    return GestureDetector(
-      child: PieChart(
-        sectors: widget.buildingInfo.map((info) => info.sector).toList(),
-        rotateAngle: _lastAnimationVal,
-      ),
-      onTapUp: (details) => _onTap(details, context),
-    );
   }
 
   Widget _buildPie(){
@@ -124,6 +169,19 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
             );
           }
       ),
+    );
+  }
+
+  //we need relative context from LayoutBuilder here to get relative coordinates of user's tap
+  Widget _buildTapablePie(BuildContext context){
+    return GestureDetector(
+      child: PieChart(
+        sectors: widget.buildingInfo.map((info) => info.sector).toList(),
+        rotateAngle: _lastRotationVal,
+        selectedSector: _currentSector,
+        maxShowAngle: _maxShownAngle,
+      ),
+      onTapUp: (details) => _onTap(details, context),
     );
   }
 
@@ -163,40 +221,11 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     );
   }
 
+
   void _initSetAnimation(double height){
     _pieSliverHeightAnimation = Tween(begin: height, end: _pieHeightAfterClick).animate(_pieSliverHeightController);
   }
 
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    double height = MediaQuery.of(context).size.height - widget.heightReduction;
-    _initSetAnimation(height);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: <Widget>[
-        AnimatedBuilder(
-          animation: _pieSliverHeightAnimation,
-          child: _buildPie(),
-          builder: (_, Widget child) => SliverAppBar(
-            floating: false,
-            flexibleSpace: child,
-            expandedHeight: _pieSliverHeightAnimation.value,
-            backgroundColor: Colors.transparent,
-            pinned: false,
-          ),
-        ),
-        SliverList(
-            delegate: SliverChildListDelegate.fixed([_buildBottomContainer()])
-        )
-      ],
-    );
-  }
 
   PieChartSector _findTargetSector(double angle, double rotationFromInitAngle){
     var relTapAngle = angle - rotationFromInitAngle;
@@ -229,7 +258,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
       angle = angle + 2*pi;
     }
 
-    PieChartSector targetSector = _findTargetSector(angle, _lastAnimationVal);
+    PieChartSector targetSector = _findTargetSector(angle, _lastRotationVal);
     if (targetSector == null) return null;
 
     if (targetSector != _currentSector) {
@@ -244,11 +273,8 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   }
   
   void _rotateToCenterOfSector(PieChartSector sector) {
-    double sectorMiddle = (sector.endAngle + sector.startAngle) / 2;
-    double newCircleAngle = _normalize(pi/2 - sectorMiddle);
-
     setState(() {
-      _lastAnimationVal = _normalize(newCircleAngle);
+      _lastRotationVal = _sectorMiddles[sector];
     });
   }
 

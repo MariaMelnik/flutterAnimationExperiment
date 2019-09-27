@@ -19,4 +19,20 @@ class PieChartSector {
 //       assert(startAngle <= endAngle),
         assert(color != null),
         assert(sectorWidth != null && sectorWidth >= 0.0);
+
+  @override
+  bool operator ==(other) {
+    bool sameTypes = other is PieChartSector;
+    if (!sameTypes) return false;
+
+    PieChartSector otherTyped = other as PieChartSector;
+    bool sameAngles = otherTyped.endAngle == this.endAngle && otherTyped.startAngle == this.startAngle;
+    bool sameColor = otherTyped.color == this.color;
+    return sameAngles && sameColor;
+  }
+
+  @override
+  int get hashCode {
+    return startAngle.hashCode ^ endAngle.hashCode ^ color.hashCode ^ sectorWidth.hashCode;
+  }
 }
