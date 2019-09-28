@@ -1,9 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gauge_test/expandedPieChart/custom_bottom_sheet.dart';
 import 'package:flutter_gauge_test/expandedPieChart/pie_chart.dart';
 import 'package:flutter_gauge_test/expandedPieChart/rotate_pie_data_set.dart';
+import 'package:flutter_gauge_test/expandedPieChart/styled_tab_view.dart';
 import 'package:flutter_gauge_test/expandedPieChart/tab_indicator.dart';
 
 class RotatePie extends StatefulWidget {
@@ -91,7 +91,6 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
 
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _startInitialFillAnimation());
-//    _tabController.animation.addListener(() => print("tabController animation: ${_tabController.animation.value}"));
   }
 
   @override
@@ -130,7 +129,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
           ),
         ),
         SliverList(
-            delegate: SliverChildListDelegate.fixed([_buildBottomContainer()])
+            delegate: SliverChildListDelegate.fixed([_buildTabViews()])
         )
       ],
     );
@@ -185,39 +184,27 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBottomContainer(){
-    return _buildTabViews();
-  }
-
   Widget _buildTabViews(){
     List<Widget> children = widget.buildingInfo
-        .map((info) => CustomBottomSheet(color: info.color, child: info.child,))
+        .map((info) => Container(child: info.child,))
         .toList().reversed.toList();
 
     List<Widget> tabs = widget.buildingInfo
         .map((info) => TabIndicator(color: info.color))
         .toList().reversed.toList();
 
+    Widget styledTabView = StyledTabView(
+      children: children,
+      tabs: tabs,
+      tabController: _tabController,
+    );
+
     double height = MediaQuery.of(context).size.height - widget.heightReduction - kTabIndicatorHeight;
 
     return Container(
       height: height,
       width: double.infinity,
-      child: Column(
-        children: <Widget>[
-          TabBar(
-            tabs: tabs,
-            isScrollable: true,
-            controller: _tabController,
-          ),
-          Expanded(
-              child: TabBarView(
-                children: children,
-                controller: _tabController,
-              )
-          ),
-        ],
-      ),
+      child: styledTabView
     );
   }
 
