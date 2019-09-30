@@ -73,6 +73,8 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
 
   double _maxShownAngle = 0.0;
 
+  double _lastTabControllerAnimationValue = 0.0;
+
   @override
   void initState(){
     super.initState();
@@ -88,9 +90,40 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
 
     _tabController = TabController(length: widget.buildingInfo.length, vsync: this);
     _tabController.addListener(_tabControllerChanged);
+    _tabController.animation.addListener(_changeRotation);
 
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _startInitialFillAnimation());
+  }
+
+  // todo: refactor this
+  void _changeRotation(){
+
+    bool ltr = _tabController.animation.value > _lastTabControllerAnimationValue;
+    int page = ltr ? _tabController.animation.value.floor() : _tabController.animation.value.ceil();
+    int nextPage = ltr ? page + 1: page - 1;
+
+    _lastTabControllerAnimationValue = _tabController.animation.value;
+
+    if (nextPage < 0 || nextPage > widget.buildingInfo.length - 1) return;
+
+    List<RotatePieBuildingInfo> reversedList = List.from(widget.buildingInfo.reversed);
+    double middleFrom = _sectorMiddles[reversedList[page].sector];
+    double middleTo = _sectorMiddles[reversedList[nextPage].sector];
+
+    bool differentSignAngle = middleFrom * middleTo < 1;
+    double needPass = differentSignAngle
+        ? (middleFrom.abs() + middleTo.abs()).abs()
+        : (middleFrom.abs() - middleTo.abs()).abs();
+    double alreadyPassed = needPass * (_tabController.animation.value - page).abs();
+
+    double newRotation = ltr
+        ? middleFrom + alreadyPassed
+        : middleFrom - alreadyPassed;
+
+    setState(() {
+      _lastRotationVal = newRotation;
+    });
   }
 
   @override
@@ -111,6 +144,9 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
             double rotatedMiddle = pi/2 - originalMiddle;
             _sectorMiddles[info.sector] = rotatedMiddle;
           });
+
+    print("sector middles:");
+    _sectorMiddles.forEach((k, v) => print("For color ${k.color} middle is $v"));
   }
 
   @override
