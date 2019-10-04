@@ -5,8 +5,9 @@ import 'package:flutter_gauge_test/expandedPieChart/pie_chart.dart';
 import 'package:flutter_gauge_test/expandedPieChart/rotate_pie_data_set.dart';
 import 'package:flutter_gauge_test/expandedPieChart/styled_tab_view.dart';
 import 'package:flutter_gauge_test/expandedPieChart/tab_indicator.dart';
+import 'package:flutter_gauge_test/expandedPieChart/tab_pie_chart_controller.dart';
 
-class RotatePie extends StatefulWidget {
+class PieWithTabView extends StatefulWidget {
   final List<RotatePieBuildingInfo> buildingInfo;
 
   /// How much view port for initial pie chart less than screen height.
@@ -21,7 +22,7 @@ class RotatePie extends StatefulWidget {
   // To make it center and correct size we need to know heights of all widgets user use on the same screen as pie chart.
   final double heightReduction;
 
-  const RotatePie({
+  const PieWithTabView({
     Key key,
     @required this.buildingInfo,
     double heightReduction
@@ -30,10 +31,10 @@ class RotatePie extends StatefulWidget {
        super(key: key);
 
   @override
-  _RotatePieState createState() => _RotatePieState();
+  _PieWithTabViewState createState() => _PieWithTabViewState();
 }
 
-class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
+class _PieWithTabViewState extends State<PieWithTabView> with TickerProviderStateMixin {
   // Size of the pie when it is on top. 
   // It is the smallest size pie can be.
   final double _pieHeightAfterClick = 200.0;
@@ -42,89 +43,36 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
 
   Duration _animationDuration = const Duration(milliseconds: 400);
 
-  // Controller for pie size animation when user scroll up tabs and for turn animation as well.
-  AnimationController _controller;
-  
   // Controller for sliver app bar size animation after user clicked on big pie.
   AnimationController _pieSliverHeightController;
 
   // Controller for pie chart size animation.
   AnimationController _pieSizeController;
 
-  Animation<double> _turnAnimation;
-  
   Animation<double> _pieSizeAnimation;
   
   Animation<double> _pieSliverHeightAnimation;
   
-  TabController _tabController;
-  
-  PieChartSector _currentSector;
-
-  // true is animation is initialized by tab on circle
-  // needs to avoid animation caused tab switching while circle is rotating
-  bool _isCircleInitializedAnimationGoing = false;
-
-  // Angle of last rotation. Should be between 0 and 2 * pi.
-  double _lastRotationVal = 0.0;
-
-  // Map where key is PieChartSector and value is angle of the middle of this sector.
-  Map<PieChartSector, double> _sectorMiddles = Map<PieChartSector, double>();
+  TabPieChartController _myController;
 
   double _maxShownAngle = 0.0;
-
-  double _lastTabControllerAnimationValue = 0.0;
 
   @override
   void initState(){
     super.initState();
 
-    _controller = AnimationController(duration: _animationDuration, vsync: this);
     _pieSliverHeightController = AnimationController(duration: _animationDuration, vsync: this);
     _pieSizeController = AnimationController(duration: _animationDuration, vsync: this);
 
-    // Made fake animation here because we use one _controller for two animations.
-    // Both of them must not be null when controller forwards.
-    _turnAnimation = Tween(begin: 0.0, end: 0.0).animate(_controller);
     _pieSizeAnimation = Tween(begin: 1.0, end: 0.7).animate(_pieSizeController);
 
-    _tabController = TabController(length: widget.buildingInfo.length, vsync: this);
-    _tabController.addListener(_tabControllerChanged);
-    _tabController.animation.addListener(_changeRotation);
+    var tabController = TabController(length: widget.buildingInfo.length, vsync: this);
+    _myController = TabPieChartController(tabController: tabController, buildingInfo: widget.buildingInfo);
 
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _startInitialFillAnimation());
   }
 
-  // todo: refactor this
-  void _changeRotation(){
-
-    bool ltr = _tabController.animation.value > _lastTabControllerAnimationValue;
-    int page = ltr ? _tabController.animation.value.floor() : _tabController.animation.value.ceil();
-    int nextPage = ltr ? page + 1: page - 1;
-
-    _lastTabControllerAnimationValue = _tabController.animation.value;
-
-    if (nextPage < 0 || nextPage > widget.buildingInfo.length - 1) return;
-
-    List<RotatePieBuildingInfo> reversedList = List.from(widget.buildingInfo.reversed);
-    double middleFrom = _sectorMiddles[reversedList[page].sector];
-    double middleTo = _sectorMiddles[reversedList[nextPage].sector];
-
-    bool differentSignAngle = middleFrom * middleTo < 1;
-    double needPass = differentSignAngle
-        ? (middleFrom.abs() + middleTo.abs()).abs()
-        : (middleFrom.abs() - middleTo.abs()).abs();
-    double alreadyPassed = needPass * (_tabController.animation.value - page).abs();
-
-    double newRotation = ltr
-        ? middleFrom + alreadyPassed
-        : middleFrom - alreadyPassed;
-
-    setState(() {
-      _lastRotationVal = newRotation;
-    });
-  }
 
   @override
   void didChangeDependencies() {
@@ -132,21 +80,6 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
 
     double height = MediaQuery.of(context).size.height - widget.heightReduction;
     _initSetAnimation(height);
-    _initSectorsMiddles();
-  }
-
-  void _initSectorsMiddles() {
-    _sectorMiddles.clear();
-
-    widget.buildingInfo
-        .forEach((RotatePieBuildingInfo info) {
-            double originalMiddle = (info.sector.startAngle + info.sector.endAngle) / 2;
-            double rotatedMiddle = pi/2 - originalMiddle;
-            _sectorMiddles[info.sector] = rotatedMiddle;
-          });
-
-    print("sector middles:");
-    _sectorMiddles.forEach((k, v) => print("For color ${k.color} middle is $v"));
   }
 
   @override
@@ -176,15 +109,6 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     setState(() => _maxShownAngle = 2*pi);
   }
 
-  void _tabControllerChanged() {
-    PieChartSector targetSector = widget.buildingInfo[_tabController.length -1  - _tabController.index].sector;
-    if (targetSector != _currentSector) {
-      print("_tabControllerChanged:: targetSector is: ${targetSector.color}");
-      if (!_isCircleInitializedAnimationGoing) _rotateToCenterOfSector(targetSector);
-      _currentSector = targetSector;
-    }
-  }
-
   Widget _buildPie(){
     return Center(
       child: LayoutBuilder(
@@ -193,13 +117,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
               animation: _pieSizeAnimation,
               builder: (_,__) => Transform.scale(
                   scale: _pieSizeAnimation.value,
-                  child: AnimatedBuilder(
-                      animation: _turnAnimation,
-                      builder: (_, __) => Transform.rotate(
-                        angle: _turnAnimation.value,
-                        child: _buildTapablePie(bcontext),
-                      )
-                  )
+                  child: _buildTapablePie(bcontext)
               ),
             );
           }
@@ -210,11 +128,25 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
   //we need relative context from LayoutBuilder here to get relative coordinates of user's tap
   Widget _buildTapablePie(BuildContext context){
     return GestureDetector(
-      child: PieChart(
-        sectors: widget.buildingInfo.map((info) => info.sector).toList(),
-        rotateAngle: _lastRotationVal,
-        selectedSector: _currentSector,
-        maxShowAngle: _maxShownAngle,
+      child: StreamBuilder<double>(
+        stream: _myController.rotationStream,
+        initialData: _myController.lastRotationVal,
+        builder: (context, AsyncSnapshot<double> snapshot) {
+          return StreamBuilder<double>(
+            stream: _myController.selectedSectorOpacityStream,
+            initialData: _myController.lastOpacityVal,
+            builder: (context, AsyncSnapshot<double> opacitySnapshot) {
+              return RotatedPieChart(
+                sectors: widget.buildingInfo.map((info) => info.sector).toList(),
+                selectedSector: _myController.selectedSector,
+                previousSelectedSector: _myController.previousSelectedSector,
+                rotateAngle: snapshot.data,
+                maxShowAngle: _maxShownAngle,
+                selectedOpacityDelta: opacitySnapshot.data,
+              );
+            }
+          );
+        }
       ),
       onTapUp: (details) => _onTap(details, context),
     );
@@ -232,7 +164,7 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
     Widget styledTabView = StyledTabView(
       children: children,
       tabs: tabs,
-      tabController: _tabController,
+      tabController: _myController.tabController,
     );
 
     double height = MediaQuery.of(context).size.height - widget.heightReduction - kTabIndicatorHeight;
@@ -281,25 +213,16 @@ class _RotatePieState extends State<RotatePie> with TickerProviderStateMixin {
       angle = angle + 2*pi;
     }
 
-    PieChartSector targetSector = _findTargetSector(angle, _lastRotationVal);
-    if (targetSector == null) return null;
+    PieChartSector targetSector = _findTargetSector(angle, _myController.lastRotationVal);
+    if (targetSector == null) return;
 
-    if (targetSector != _currentSector) {
-      int index = widget.buildingInfo.indexWhere((info) => info.sector == targetSector);
+    int targetSectorIndex = widget.buildingInfo.indexWhere((info) => info.sector == targetSector);
+    int curSectorIndex = _myController.tabController.index;
 
-      // duration must be the same as duration of circle rotation animation
-      _tabController.animateTo(_tabController.length - 1 - index, duration: _animationDuration, curve: _curve);
-      _rotateToCenterOfSector(targetSector);
-
-      _currentSector = targetSector;
-    }
+//    if (targetSectorIndex == curSectorIndex) return;
+    _myController.tabController.animateTo(_myController.tabController.length - 1 - targetSectorIndex, duration: _animationDuration, curve: _curve);
   }
-  
-  void _rotateToCenterOfSector(PieChartSector sector) {
-    setState(() {
-      _lastRotationVal = _sectorMiddles[sector];
-    });
-  }
+
 
   double _normalize(double originalVal) {
     return originalVal % (2*pi);

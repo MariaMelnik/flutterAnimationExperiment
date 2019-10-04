@@ -4,14 +4,21 @@ import 'dart:math';
 
 class PieChartPainter extends CustomPainter{
   final List<PieChartSector> sectors;
-  final Paint _painter;
+
+  // Can be null. All sectors will be selected.
   final PieChartSector selectedSector;
+
   final PieChartSector previousSelectedSector;
+
+  // How much we should add to 0.5 for opacity of the [selectedSector].
+  // How much we should reduce 1 for opacity of the [previousSelectedSector].
   final double opacityDelta;
 
   // How many of the pie should be visible.
   // By default 2*pi what means all pie is visible.
   final double maxShownAngle;
+
+  final Paint _painter;
 
   PieChartPainter({
     @required this.sectors,
@@ -24,7 +31,23 @@ class PieChartPainter extends CustomPainter{
           ..style = PaintingStyle.stroke,
         assert (sectors!=null);
 
-  
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double radius = size.width / 2;
+    canvas.save();
+    canvas.translate(radius, radius);
+
+    sectors.forEach((PieChartSector sector) => _paintSector(canvas, sector, radius));
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
+  }
+
+
   void _paintSector(Canvas canvas, PieChartSector sector, double radius){
     double endAngleChecked = sector.startAngle > sector.endAngle
         ? sector.startAngle
@@ -46,7 +69,8 @@ class PieChartPainter extends CustomPainter{
     );
 
 
-    if (selectedSector != null) {
+    // [selectedSector] == [previousSelectedSector] at the very beginning. When no sector was selected.
+    if (selectedSector != null && selectedSector != previousSelectedSector) {
       if (sector == selectedSector) _painter.color = sector.color.withOpacity(0.5 + opacityDelta);
       else if (sector == previousSelectedSector) _painter.color = sector.color.withOpacity(1 - opacityDelta);
       else _painter.color = sector.color.withOpacity(0.5);
@@ -63,20 +87,5 @@ class PieChartPainter extends CustomPainter{
         false,
         _painter
     );
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    double radius = size.width / 2;
-    canvas.save();
-    canvas.translate(radius, radius);
-
-    sectors.forEach((PieChartSector sector) => _paintSector(canvas, sector, radius));
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return true;
   }
 }

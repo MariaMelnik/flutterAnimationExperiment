@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gauge_test/expandedPieChart/pie_data_set_mock.dart';
-import 'package:flutter_gauge_test/expandedPieChart/rotate_pie.dart';
+import 'package:flutter_gauge_test/expandedPieChart/pie_with_tab_view.dart';
 import 'dart:math';
 
 import 'package:flutter_gauge_test/gauge/gauge.dart';
@@ -208,7 +208,7 @@ class MyHomePage extends StatelessWidget {
       child: Container(
         height: double.infinity,
           color: Colors.blueGrey.withOpacity(0.03),
-          child: RotatePie(
+          child: PieWithTabView(
             buildingInfo: RotatePieMockData.data,
             heightReduction: 64.0, //appBar height
           )

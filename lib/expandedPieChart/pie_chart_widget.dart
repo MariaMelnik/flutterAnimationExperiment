@@ -7,21 +7,28 @@ const Duration _changeRotationAnimationDuration = const Duration(milliseconds: 3
 const Curve _animationCurve = Curves.easeOut;
 const double _opacityThreshold = 0.5; // default opacity for unselected sectors
 
-class PieChart extends ImplicitlyAnimatedWidget {
+class RotatedPieChart extends ImplicitlyAnimatedWidget {
   final List<PieChartSector> sectors;
   final double rotateAngle;
-
-  // Can be null if no sector selected.
-  final PieChartSector selectedSector;
 
   // How many of the pie should be visible.
   // By default 2*pi what means all pie is visible.
   final double maxShowAngle;
 
-  PieChart({
+  /// Opacity delta of the selected sector.
+  /// Also used for changing opacity for previous selected sector.
+  final double selectedOpacityDelta;
+
+  final PieChartSector selectedSector;
+
+  final PieChartSector previousSelectedSector;
+
+  RotatedPieChart({
     @required this.sectors,
     @required this.rotateAngle,
-    this.selectedSector,
+    @required this.selectedSector,
+    @required this.previousSelectedSector,
+    this.selectedOpacityDelta,
     this.maxShowAngle = 2 * pi,
     Key key
   }) : assert(sectors != null),
@@ -37,22 +44,9 @@ class PieChart extends ImplicitlyAnimatedWidget {
   _PieChartState createState() => _PieChartState();
 }
 
-class _PieChartState extends AnimatedWidgetBaseState<PieChart> {
+class _PieChartState extends AnimatedWidgetBaseState<RotatedPieChart> {
   Tween _turnAnimation;
   Tween _fillAnimation;
-  Tween _selectedOpacity;
-
-  PieChartSector _previousSelectedSector;
-
-  @override
-  void didUpdateWidget(PieChart oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.selectedSector != widget.selectedSector) {
-      _selectedOpacity = Tween(begin: 0.0, end: _opacityThreshold);
-      _previousSelectedSector = oldWidget.selectedSector;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,16 +57,20 @@ class _PieChartState extends AnimatedWidgetBaseState<PieChart> {
         width: double.infinity,
         child: Transform.rotate(
           angle: _turnAnimation.evaluate(animation) as double,
-          child: CustomPaint(
-            painter: PieChartPainter(
-              sectors: widget.sectors,
-              selectedSector: widget.selectedSector,
-              previousSelectedSector: _previousSelectedSector,
-              maxShownAngle: _fillAnimation.evaluate(animation) as double,
-              opacityDelta: _selectedOpacity.evaluate(animation) as double
-            ),
-          ),
+          child: _buildPieWithOpacityAnimation()
         ),
+      ),
+    );
+  }
+
+  Widget _buildPieWithOpacityAnimation(){
+    return CustomPaint(
+      painter: PieChartPainter(
+        sectors: widget.sectors,
+        selectedSector: widget.selectedSector,
+        previousSelectedSector: widget.previousSelectedSector,
+        maxShownAngle: _fillAnimation.evaluate(animation) as double,
+        opacityDelta: widget.selectedOpacityDelta
       ),
     );
   }
@@ -81,10 +79,8 @@ class _PieChartState extends AnimatedWidgetBaseState<PieChart> {
   void forEachTween(visitor) {
     _turnAnimation = visitor(_turnAnimation, widget.rotateAngle, (val) => Tween(begin: val));
     _fillAnimation = visitor(_fillAnimation, widget.maxShowAngle, (val) => Tween(begin: val));
-    _selectedOpacity = visitor(_selectedOpacity, _opacityThreshold, (val) => Tween(begin: val));
     assert(_turnAnimation != null);
     assert(_fillAnimation != null);
-    assert(_selectedOpacity != null);
   }
 }
 
