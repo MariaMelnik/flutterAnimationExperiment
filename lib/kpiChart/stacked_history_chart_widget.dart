@@ -79,7 +79,7 @@ class StackedHistoryChart extends StatelessWidget {
       defaultRenderer: charts.LineRendererConfig(includeArea: true, areaOpacity: 1.0),
       selectionModels: [charts.SelectionModelConfig(
         type: charts.SelectionModelType.info,
-        listener: _onSelectionChanged
+        changedListener: _onSelectionChanged
       )],
     );
 
