@@ -28,7 +28,6 @@ class StackedHistoryChart extends StatelessWidget {
   ///
   /// For each [TimeSeriesData] we add new [TimeSeriesData] with the same value and [timestamp] 1 microsecond less next value.
   static List<TimeSeriesData> modifyData (List<TimeSeriesData> origData){
-
     if (origData == null) return null;
 
     List<TimeSeriesData> sortedData = List.from(origData);
@@ -43,7 +42,7 @@ class StackedHistoryChart extends StatelessWidget {
       if (index < sortedData.length - 1) {
         TimeSeriesData next = sortedData[index+1];
 
-        DateTime endTs = next.timestamp.subtract(Duration(microseconds: 1));
+        DateTime endTs = next.timestamp.subtract(Duration(milliseconds: 1));
         TimeSeriesData end = TimeSeriesData(timestamp: endTs, val: data.val);
         result.add(end); // add "end" of the period with value
       }

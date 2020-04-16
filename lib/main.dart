@@ -236,8 +236,8 @@ class MyHomePage extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Text("Animation", style: TextStyle(color: Colors.grey, letterSpacing: 1.2),),
       ),
-      body: _buildPie()
-//      body: _buildStackedHistoryChart(),
+//      body: _buildPie()
+      body: _buildStackedHistoryChart(),
 //      body: _buildGauge()
     );
   }
