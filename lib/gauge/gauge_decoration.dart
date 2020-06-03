@@ -145,7 +145,7 @@ class GaugeDecoration {
       baselineColor: baselineColor ?? this.baselineColor,
       baselineWidth: baselineWidth ?? this.baselineWidth,
       baselinePaintingStyle: baselinePaintingStyle ?? this.baselinePaintingStyle,
-      backgroundColor: baselineColor ?? this.baselineColor,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
       limitArrowHeight: limitArrowHeight ?? this.limitArrowHeight,
       limitArrowWidth: limitArrowWidth ?? this.limitArrowWidth,
       limitArrowColor: limitArrowColor ?? this.limitArrowColor,
