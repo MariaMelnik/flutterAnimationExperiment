@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_gauge_test/gauge/arrow_painter.dart';
 import 'package:flutter_gauge_test/gauge/baseline_painter.dart';

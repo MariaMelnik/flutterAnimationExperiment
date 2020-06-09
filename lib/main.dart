@@ -32,7 +32,7 @@ class MyHomePage extends StatelessWidget {
 
 
   MyHomePage() {
-//    Stream.periodic(Duration(seconds: 3)).listen(genData);
+    Stream.periodic(Duration(seconds: 3)).listen(genData);
   }
 
   void genData(dynamic num){
@@ -65,7 +65,7 @@ class MyHomePage extends StatelessWidget {
         rangeWidth: 10.0,
         limitArrowHeight: 16.0,
         limitArrowWidth: 12.0,
-//      backgroundColor: Colors.green[100]
+        backgroundColor: Colors.green[100]
     );
 
 
@@ -97,7 +97,7 @@ class MyHomePage extends StatelessWidget {
               <Widget>[
                 SizedBox(width: 10.0,),
               Card(
-                color: Colors.green[100],
+//                color: Colors.green[100],
                 child: Column(
                   children: <Widget>[
                     Expanded(
@@ -169,7 +169,7 @@ class MyHomePage extends StatelessWidget {
         Expanded(
           flex: 1,
           child:    Card(
-              color: Colors.black87.withOpacity(0.7),
+//              color: Colors.black87.withOpacity(0.7),
               child: Column(
                 children: <Widget>[
                   Expanded(
@@ -237,8 +237,8 @@ class MyHomePage extends StatelessWidget {
         title: Text("Animation", style: TextStyle(color: Colors.grey, letterSpacing: 1.2),),
       ),
 //      body: _buildPie()
-      body: _buildStackedHistoryChart(),
-//      body: _buildGauge()
+//      body: _buildStackedHistoryChart(),
+      body: _buildGauge()
     );
   }
 }

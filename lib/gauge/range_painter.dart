@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter_gauge_test/gauge/gauge_decoration.dart';
 
@@ -39,11 +39,17 @@ class RangePainter extends CustomPainter{
         ? min
         : decoration.minVal;
 
+    rangeMinChecked = math.min(rangeMinChecked, max);
+
+
     num rangeMaxChecked = decoration.maxVal > max
         ? max
         : decoration.maxVal >= rangeMinChecked
           ? decoration.maxVal
           : rangeMinChecked;
+
+    rangeMaxChecked = math.max(rangeMaxChecked, min);
+
 
     double rangeWidthChecked = rangeWidth > radius
         ? radius
@@ -54,8 +60,8 @@ class RangePainter extends CustomPainter{
       ..style = PaintingStyle.stroke
       ..strokeWidth = rangeWidthChecked;
 
-    double arcAngleFrom = (rangeMinChecked-min) / (max-min)*pi + -pi;
-    double arcAngle = (rangeMaxChecked-rangeMinChecked) / (max-min) * pi;
+    double arcAngleFrom = (rangeMinChecked-min) / (max-min)* math.pi + -math.pi;
+    double arcAngle = (rangeMaxChecked-rangeMinChecked) / (max-min) * math.pi;
 
     canvas.drawArc(
         outerRect,
@@ -67,8 +73,11 @@ class RangePainter extends CustomPainter{
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    // TODO: implement shouldRepaint
-    return true;
+  bool shouldRepaint(RangePainter oldDelegate) {
+    bool boundariesAreChanged = oldDelegate.min != min || oldDelegate.max != max;
+    bool rangesChanged = oldDelegate.ranges != ranges;
+    bool widthChanged = oldDelegate.rangeWidth != rangeWidth;
+
+    return boundariesAreChanged || rangesChanged || widthChanged;
   }
 }
