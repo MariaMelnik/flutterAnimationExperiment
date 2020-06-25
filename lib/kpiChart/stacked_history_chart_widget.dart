@@ -74,6 +74,7 @@ class StackedHistoryChart extends StatelessWidget {
   Widget build(BuildContext context) {
     charts.TimeSeriesChart chart = charts.TimeSeriesChart(
       _getSeries(),
+      animate: false,
       primaryMeasureAxis: charts.NumericAxisSpec(renderSpec: charts.NoneRenderSpec()),
       defaultRenderer: charts.LineRendererConfig(includeArea: true, areaOpacity: 1.0),
       selectionModels: [charts.SelectionModelConfig(
