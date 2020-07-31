@@ -52,7 +52,8 @@ class StackedHistoryChart extends StatelessWidget {
   }
 
   /// Generates map where keys are sorted TimeSeriesData and values are appropriated constraints.
-  /// If there is no appropriate constraint for some TimeSeriesData object, this object just skipped.
+  /// If there is no appropriate constraint for some TimeSeriesData object, new constraint for
+  /// will be created with minVal == maxVal == skipped value. Color of that constraint is transparent.
   ///
   /// If given [decoration] is null, returns empty SplayTreeMap.
   static SplayTreeMap<TimeSeriesData, StackedHistoryChartConstraints> getDataWithConstraints(List<TimeSeriesData> data, StackedHistoryChartSettings decoration) {
@@ -65,6 +66,16 @@ class StackedHistoryChart extends StatelessWidget {
       StackedHistoryChartConstraints constrain = decoration.constraints
           .firstWhere((c) => c.minVal <= data.val && c.maxVal > data.val, orElse: () => null);
       if (constrain != null) result[data] = constrain;
+      else {
+        StackedHistoryChartConstraints mockConstrain = StackedHistoryChartConstraints(
+          maxVal: data.val,
+          minVal: data.val,
+          color: Colors.transparent,
+          dis: "[no dis]"
+        );
+
+        result[data] = mockConstrain;
+      }
     });
 
     return result;

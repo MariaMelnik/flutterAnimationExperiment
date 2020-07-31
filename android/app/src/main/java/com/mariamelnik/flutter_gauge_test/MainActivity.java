@@ -1,4 +1,4 @@
-package com.mariamelnik.fluttergaugetest;
+package com.mariamelnik.flutter_gauge_test;
 
 import android.os.Bundle;
 import io.flutter.app.FlutterActivity;

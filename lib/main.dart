@@ -32,7 +32,7 @@ class MyHomePage extends StatelessWidget {
 
 
   MyHomePage() {
-    Stream.periodic(Duration(seconds: 3)).listen(genData);
+//    Stream.periodic(Duration(seconds: 3)).listen(genData);
   }
 
   void genData(dynamic num){
@@ -237,8 +237,8 @@ class MyHomePage extends StatelessWidget {
         title: Text("Animation", style: TextStyle(color: Colors.grey, letterSpacing: 1.2),),
       ),
 //      body: _buildPie()
-//      body: _buildStackedHistoryChart(),
-      body: _buildGauge()
+      body: _buildStackedHistoryChart(),
+//      body: _buildGauge()
     );
   }
 }
